@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Union
 
 import numpy as np
 import pystk
@@ -41,17 +42,59 @@ class Action(Enum):
 
     @classmethod
     def check_value_range(cls, action: "Action") -> bool:
-        if action.value == cls.STEER:
+        """
+        Checks if the given action is within it's range of values.
+
+        :param action: action to check the value range for.
+        """
+        if action == cls.STEER:
             return -1 < action.action_value <= 1
         return 0 <= action.action_value <= 1
 
     @classmethod
-    def get_actions(cls, actions: np.ndarray | list) -> pystk.Action:
+    def get_actions_from_enum(cls, actions: Union[np.ndarray, list]) -> pystk.Action:
         """
-        :param actions: list of actions
         Returns a `pystk.Action` object after updating it with `actions`.
+
+        :param actions: list of actions.
         """
         current_action = pystk.Action()
+        for action in actions:
+            if action.value == cls.STEER:
+                setattr(current_action, action.action_name, action.action_value - 1)
+            setattr(current_action, action.action_name, action.action_value)
+        return current_action
+
+    @classmethod
+    def get_actions_from_list(cls, actions: Union[np.ndarray, list]) -> pystk.Action:
+        """
+        Returns a `pystk.Action` object after updating it with `actions`.
+
+        :param actions: list of actions.
+        """
+        idx = {i: value.action_name for i, (_, value) in enumerate(cls.__members__.items())}
+        steer_idx = list(idx.values()).index("steer")
+        current_action = pystk.Action()
+
+        for i, action_value in enumerate(actions):
+            if i == steer_idx:
+                setattr(current_action, idx[i], action_value - 1)
+            setattr(current_action, idx[i], action_value)
+        return current_action
+
+    @classmethod
+    def get_actions_from_dict(cls, actions: dict) -> pystk.Action:
+        """
+        Returns a `pystk.Action` object after updating it with `actions`.
+
+        :param actions: list of actions.
+        """
+        current_action = pystk.Action()
+        for key, value in actions:
+            if key == cls.STEER.action_name:
+                setattr(current_action, key, value - 1)
+            setattr(current_action, key, value)
+
         for action in actions:
             if action.value == cls.STEER:
                 setattr(current_action, action.action_name, action.action_value - 1)
