@@ -7,7 +7,7 @@ import pystk
 from gym import spaces
 
 
-class ActionType(object):
+class ActionType:
     """
     A type of action specifies its definition space,
     and how actions are executed in the environment.
@@ -20,7 +20,7 @@ class ActionType(object):
 
     def space(self) -> spaces.Space:
         """The action space."""
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def get_actions(self, actions: Union[np.ndarray, dict]) -> pystk.Action:
         """
@@ -28,7 +28,7 @@ class ActionType(object):
 
         :param actions: list of actions to be updated
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class MultiDiscreteAction(ActionType):
@@ -109,3 +109,5 @@ class MultiDiscreteAction(ActionType):
             return self._get_actions_from_dict(actions)
         elif isinstance(actions, (list, np.ndarray)):
             return self._get_actions_from_list(actions)
+        else:
+            raise NotImplementedError()
