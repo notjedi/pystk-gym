@@ -1,14 +1,32 @@
-from enum import Enum
-from typing import Union
+from __future__ import annotations
+
+from typing import Iterable, Optional, Union
 
 import numpy as np
 import pystk
+from gym import spaces
 
 
-class Action(Enum):
+class ActionType(object):
     """
-    Enum class to represent all actions in the game.
+    A type of action specifies its definition space,
+    and how actions are executed in the environment.
+    """
 
+    POSSIBLE_ACTIONS = ["acceleration", "brake", "steer", "fire", "drift", "nitro", "rescue"]
+
+    def __init__(self) -> None:
+        self.current_action = pystk.Action()
+
+    def space(self) -> spaces.Space:
+        raise NotImplementedError
+
+    def get_actions(self, actions: Optional[Union[np.ndarray, dict]] = None) -> pystk.Action:
+        raise NotImplementedError
+
+
+class MultiDiscreteAction(ActionType):
+    """
     -----------------------------------------------------------------
     |         ACTIONS               |       POSSIBLE VALUES         |
     -----------------------------------------------------------------
@@ -22,81 +40,43 @@ class Action(Enum):
     -----------------------------------------------------------------
     """
 
-    # ACTION = (action_value, action_name)
-    ACCELERATION = (1, "acceleration")
-    BRAKE = (0, "brake")
-    STEER = (0, "steer")
-    FIRE = (0, "fire")
-    DRIFT = (0, "drift")
-    NITRO = (0, "nitro")
-    RESCUE = (0, "rescue")
+    def __init__(
+        self,
+        action_space: spaces.Space = spaces.MultiDiscrete([2, 2, 3, 2, 2, 2]),
+        action_list: Iterable[str] = ActionType.POSSIBLE_ACTIONS,
+    ) -> None:
+        super().__init__()
+        self.action_space = action_space
+        self.action_list = action_list
 
-    def __init__(self, action_value: int, action_name: str) -> None:
-        """
-        :param action_value: value of the action.
-        :param action_name: name of the action, should be the same as the
-        attribute name in the `pystk.Action` class.
-        """
-        self.action_value = action_value
-        self.action_name = action_name
+    def space(self) -> spaces.Space:
+        return self.action_space
 
-    @classmethod
-    def check_value_range(cls, action: "Action") -> bool:
-        """
-        Checks if the given action is within it's range of values.
+    def _get_actions_from_dict(self, actions: dict) -> pystk.Action:
+        assert self.action_space.contains(actions.values())
+        assert set(actions.keys()).issubset(self.action_list)
+        self.current_action = pystk.Action()
 
-        :param action: action to check the value range for.
-        """
-        if action == cls.STEER:
-            return -1 < action.action_value <= 1
-        return 0 <= action.action_value <= 1
+        for key, value in actions.items():
+            if key == "steer":
+                setattr(self.current_action, key, value - 1)
+            setattr(self.current_action, key, value)
 
-    @classmethod
-    def get_actions_from_enum(cls, actions: Union[np.ndarray, list]) -> pystk.Action:
-        """
-        Returns a `pystk.Action` object after updating it with `actions`.
+        return self.current_action
 
-        :param actions: list of actions.
-        """
-        current_action = pystk.Action()
-        for action in actions:
-            if action.value == cls.STEER:
-                setattr(current_action, action.action_name, action.action_value - 1)
-            setattr(current_action, action.action_name, action.action_value)
-        return current_action
+    def _get_actions_from_list(self, actions: np.ndarray) -> pystk.Action:
+        assert self.action_space.contains(actions)
+        self.current_action = pystk.Action()
 
-    @classmethod
-    def get_actions_from_list(cls, actions: Union[np.ndarray, list]) -> pystk.Action:
-        """
-        Returns a `pystk.Action` object after updating it with `actions`.
+        for key, value in zip(self.action_list, actions):
+            if key == "steer":
+                setattr(self.current_action, key, value - 1)
+            setattr(self.current_action, key, value)
 
-        :param actions: list of actions.
-        """
-        idx = {i: value.action_name for i, (_, value) in enumerate(cls.__members__.items())}
-        steer_idx = list(idx.values()).index("steer")
-        current_action = pystk.Action()
+        return self.current_action
 
-        for i, action_value in enumerate(actions):
-            if i == steer_idx:
-                setattr(current_action, idx[i], action_value - 1)
-            setattr(current_action, idx[i], action_value)
-        return current_action
-
-    @classmethod
-    def get_actions_from_dict(cls, actions: dict) -> pystk.Action:
-        """
-        Returns a `pystk.Action` object after updating it with `actions`.
-
-        :param actions: list of actions.
-        """
-        current_action = pystk.Action()
-        for key, value in actions:
-            if key == cls.STEER.action_name:
-                setattr(current_action, key, value - 1)
-            setattr(current_action, key, value)
-
-        for action in actions:
-            if action.value == cls.STEER:
-                setattr(current_action, action.action_name, action.action_value - 1)
-            setattr(current_action, action.action_name, action.action_value)
-        return current_action
+    def get_actions(self, actions: Union[np.ndarray, dict]) -> pystk.Action:
+        if isinstance(actions, dict):
+            return self._get_actions_from_dict(actions)
+        elif isinstance(actions, np.ndarray):
+            return self._get_actions_from_list(actions)
