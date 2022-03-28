@@ -46,7 +46,7 @@ class GraphicConfig:
     @staticmethod
     def default_config() -> pystk.GraphicConfig:
         """Default graphic config."""
-        return GraphicConfig(600, 400, GraphicQuality.HD)._get_graphic_config()
+        return GraphicConfig.get_graphic_config(600, 400, GraphicQuality.HD)
 
     @classmethod
     def get_graphic_config(
