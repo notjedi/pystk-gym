@@ -55,6 +55,7 @@ class RaceConfig:
     ]
 
     def __init__(self) -> None:
+        # TODO:
         pass
 
     @staticmethod
@@ -150,6 +151,13 @@ class Race:
 
     def get_all_karts(self) -> list:
         return self.state.karts
+
+    def get_controlled_karts(self) -> list:
+        controlled_karts = []
+        for kart in self.race.get_all_karts():
+            if kart.controller == pystk.PlayerConfig.Controller.PLAYER_CONTROL:
+                controlled_karts.append(kart)
+        return controlled_karts
 
     def step(self, actions: Optional[Union[pystk.Action, Iterable[pystk.Action]]]) -> np.ndarray:
         if actions is not None:

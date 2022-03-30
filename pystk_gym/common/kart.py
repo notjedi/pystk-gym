@@ -4,21 +4,28 @@ from sympy import Point3D
 
 
 class Kart:
-
-    def __init__(self, kart, observation_type) -> None:
+    def __init__(
+        self, kart, observation_type, is_reverse, path_width, path_lines, path_distance
+    ) -> None:
         self.kart = kart
         # self.race = race
         self.observation_type = observation_type
-        self.reverse = self.race.get_config().reverse
-        self.path_width = self.race.get_path_width()
-        self.path_lines = self.race.get_path_lines()
-        self.path_distance = self.race.get_path_distance()
+        self.is_reverse = is_reverse
+        self.path_width = path_width
+        self.path_lines = path_lines
+        self.path_distance = path_distance
+
         self._node_idx = 0
+        self.jump_count = 0
+        self.backward_count = 0
+        self.no_movement_count = 0
+        self.out_of_track_count = 0
+        self._prev_info = {}
 
     def _update_node_idx(self) -> None:
         dist_down_track = (
             0
-            if self.reverse and self.kart.overall_distance <= 0
+            if self.is_reverse and self.kart.overall_distance <= 0
             else self.kart.distance_down_track
         )
         path_dist = self.path_distance[self._node_idx]
@@ -55,7 +62,6 @@ class Kart:
         # should i call this inside step?
         # divide path_width by 2 because it's the width of the current path node
         # and the dist of kart is from the center line
-        self._update_node_idx()
         curr_path_width = self.path_width[self._node_idx][0]
         kart_dist = self._get_kart_dist_from_center()
         return kart_dist <= curr_path_width / 2
@@ -65,8 +71,7 @@ class Kart:
         return np.sqrt(np.sum(np.array(self.kart.velocity) ** 2))
 
     def is_done(self) -> bool:
-        pass
-        # return self.kart.finish_time > 0 or
+        return self.kart.finish_time > 0
 
     # def _check_nitro(self) -> bool:
     #     kartLoc = np.array(self.playerKart.location)
@@ -89,20 +94,62 @@ class Kart:
 
     def get_info(self) -> dict:
         info = {}
+
         info["done"] = self.is_done()
-        # info["nitro"] = self._check_nitro()
         info["jumping"] = self._get_jumping()
         info["powerup"] = self._get_powerup()
         info["velocity"] = self._get_velocity()
-        # info["position"] = self._get_position()
         info["attachment"] = self._get_attachment()
         info["finish_time"] = self._get_finish_time()
         info["is_inside_track"] = self._get_is_inside_track()
         info["overall_distance"] = self._get_overall_distance()
+
+        info["jump_count"] = self.jump_count
+        info["backward_count"] = self.backward_count
+        info["no_movement_count"] = self.no_movement_count
+        info["out_of_track_count"] = self.out_of_track_count
+
+        # info["nitro"] = self._check_nitro()
+        # info["position"] = self._get_position()
+        if len(self._prev_info) == 0:
+            self._prev_info = info
+
+        delta_dist = info["overall_distance"] - self._prev_info["overall_distance"]
+        info["delta_dist"] = delta_dist
+        if delta_dist < 0:
+            info["backward"] = True
+            info["no_movement"] = False
+        elif delta_dist == 0:
+            info["backward"] = False
+            info["no_movement"] = True
+        else:
+            info["backward"] = False
+            info["no_movement"] = False
+
         return info
 
-    def step(self):
-        pass
+    def step(self) -> dict:
+        self._update_node_idx()
+        info = self.get_info()
+
+        if not info["is_inside_track"]:
+            self.out_of_track_count += 1
+
+        delta_dist = info['delta_dist']
+        if delta_dist < 0:
+            self.backward_count += 1
+        elif delta_dist == 0:
+            self.no_movement_count += 1
+
+        if info["jumping"] and not self._prev_info["jumping"]:
+            self.jump_count += 1
+
+        self.prev_info = info
+        return info
 
     def reset(self):
-        pass
+        self._node_idx = 0
+        self.jump_count = 0
+        self.backward_count = 0
+        self.no_movement_count = 0
+        self.out_of_track_count = 0

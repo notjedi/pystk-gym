@@ -1,71 +1,77 @@
-from typing import Union, Tuple, List, Optional
+from typing import List, Optional, Tuple, Union
 
 import gym
 import numpy as np
 import pystk
 
 from ..common.actions import ActionType
-from ..common.race import Race
 from ..common.kart import Kart
+from ..common.race import Race, RaceConfig
 
 
 class AbstractEnv(gym.Env):
     def __init__(
         self,
-        race: Race,
+        race_config: RaceConfig,
         action_type: ActionType,
         reward_func: RewardType,
         observation_type: ObservationType,
     ):
-        # TODO: accept config instead of actual objects
+        # TODO: accept config instead of actual objects and use self.configure()
         # TODO: init with default config
-        self.race = race
         self.reward_func = reward_func
         self.action_type = action_type
         self.observation_type = observation_type
+        self.configure(race_config)
 
         self.done = False
         self.steps = 0
+        is_reverse, path_width, path_lines, path_distance = (
+            self.race.get_race_info()['reverse'],
+            self.race.get_path_width(),
+            self.race.get_path_lines(),
+            self.race.get_path_distance(),
+        )
         self.controlled_karts = [
-            Kart(kart, self.observation_type) for kart in self.get_controlled_karts()
+            Kart(kart, self.observation_type, is_reverse, path_width, path_lines, path_distance)
+            for kart in self.race.get_controlled_karts()
         ]
         self.define_spaces()
 
     def seed(self, seed: int):
         raise NotImplementedError
 
-    def configure(self, race: Race,)
+    def configure(
+        self,
+        race_config: RaceConfig,
+    ):
+        self.race = Race(race_config.get_race_config())
 
     def define_spaces(self):
         self.observation_space = self.observation_type.space()
-        self.action = self.action_type.space()
-
-    def get_controlled_karts(self) -> list:
-        controlled_karts = []
-        for kart in self.race.get_all_karts():
-            if kart.controller == pystk.PlayerConfig.Controller.PLAYER_CONTROL:
-                controlled_karts.append(kart)
-        return controlled_karts
+        self.action_space = self.action_type.space()
 
     def step(
         self, actions: Union[np.ndarray, list, dict]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
 
-        # TODO
+        self.race.step(actions)
         obs = np.array([kart.observe() for kart in self.controlled_karts])
-        infos = self._info()
+        infos = [kart.step() for kart in self.controlled_karts]
         rewards = self._reward(actions, infos)
-        dones = self._is_done()
+        terminal = self._terminal(infos)
 
+        # TODO: how should i update self.done
+        dones = self._is_done()
         self.done = any(dones)
 
-        return obs, rewards, dones, infos
+        return obs, rewards, terminal, infos
+
+    def _terminal(self, infos: List[dict]) -> List[bool]:
+        raise NotImplementedError
 
     def _reward(self, actions, infos) -> List[float]:
-        return self.reward_func.get_rewards(actions, infos)
-
-    def _info(self) -> List[dict]:
-        return [kart.get_info() for kart in self.controlled_karts]
+        return [self.reward_func.get_rewards(action, info) for action, info in zip(actions, infos)]
 
     def _is_done(self) -> List[bool]:
         return [kart.is_done() for kart in self.controlled_karts]
@@ -85,26 +91,3 @@ class AbstractEnv(gym.Env):
         self.done = True
         self.race.close()
         pystk.clean()
-
-
-class RaceEnv(AbstractEnv):
-    def __init__(self, race: Race, action_type: ActionType):
-        self.race = race
-        self._node_idx = 0
-        self.action_type = action_type
-        self.reverse = self.race.get_config().reverse
-
-    def step(self, actions: Optional[np.ndarray] = None):
-        # TODO: convert actions to pystk.Action
-        # TODO: vectorize get_actions
-        # self.action_type.get_actions(actions)
-        self.race.step(actions)
-        for kart in self.controlled_karts:
-            kart._update_node_idx()
-
-    def reset(self):
-        for kart in self.controlled_karts:
-            kart.reset()
-
-    def done(self):
-        raise NotImplementedError
