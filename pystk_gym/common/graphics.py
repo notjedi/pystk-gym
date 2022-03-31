@@ -36,22 +36,21 @@ class GraphicConfig:
         self.height = height
         self.graphic_quality = graphic_quality
 
-    def _get_graphic_config(self) -> pystk.GraphicConfig:
+    def get_pystk_config(self) -> pystk.GraphicConfig:
         """Internal method to get a pystk.GraphicConfig object."""
-        config = self.graphic_quality.get_obj()
-        config.screen_width = self.width
-        config.screen_height = self.height
-        return config
+        return self.get_graphic_config(self.width, self.height, self.graphic_quality)
 
     @staticmethod
     def default_config() -> pystk.GraphicConfig:
         """Default graphic config."""
         return GraphicConfig.get_graphic_config(600, 400, GraphicQuality.HD)
 
-    @classmethod
+    @staticmethod
     def get_graphic_config(
-        cls, width: int, height: int, graphic_type: GraphicQuality
+        width: int, height: int, graphic_quality: GraphicQuality
     ) -> pystk.GraphicConfig:
         """Get pystk.GraphicConfig object using the parameters."""
-        config = cls(width, height, graphic_type)
-        return config._get_graphic_config()
+        config = graphic_quality.get_obj()
+        config.screen_width = width
+        config.screen_height = height
+        return config

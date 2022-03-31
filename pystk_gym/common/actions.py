@@ -13,7 +13,15 @@ class ActionType:
     and how actions are executed in the environment.
     """
 
-    POSSIBLE_ACTIONS = ["acceleration", "brake", "steer", "fire", "drift", "nitro", "rescue"]
+    POSSIBLE_ACTIONS = [
+        "acceleration",
+        "brake",
+        "steer",
+        "fire",
+        "drift",
+        "nitro",
+        "rescue",
+    ]
 
     def __init__(self) -> None:
         self.current_action = pystk.Action()
