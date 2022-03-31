@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pystk
 from sympy import Point3D
@@ -5,16 +7,21 @@ from sympy import Point3D
 
 class Kart:
     def __init__(
-        self, kart, observation_type, is_reverse, path_width, path_lines, path_distance
+        self,
+        kart: pystk.Kart,
+        is_reverse: bool,
+        path_width: np.ndarray,
+        path_lines: np.ndarray,
+        path_distance: np.ndarray,
     ) -> None:
         self.kart = kart
-        # self.race = race
-        self.observation_type = observation_type
         self.is_reverse = is_reverse
         self.path_width = path_width
         self.path_lines = path_lines
         self.path_distance = path_distance
+        self._init_vars()
 
+    def _init_vars(self):
         self._node_idx = 0
         self.jump_count = 0
         self.backward_count = 0
@@ -53,15 +60,14 @@ class Kart:
 
     def _get_kart_dist_from_center(self):
         # compute the dist b/w the kart and the center of the track
-        # should have called self._update_node_idx() before calling this to avoid errors
         location = self.kart.location
         path_node = self.path_lines[self._node_idx]
         return path_node.distance(Point3D(location)).evalf()
 
     def _get_is_inside_track(self):
-        # should i call this inside step?
         # divide path_width by 2 because it's the width of the current path node
         # and the dist of kart is from the center line
+        # TODO: add user defined tolerance
         curr_path_width = self.path_width[self._node_idx][0]
         kart_dist = self._get_kart_dist_from_center()
         return kart_dist <= curr_path_width / 2
@@ -73,28 +79,10 @@ class Kart:
     def is_done(self) -> bool:
         return self.kart.finish_time > 0
 
-    # def _check_nitro(self) -> bool:
-    #     kartLoc = np.array(self.playerKart.location)
-    #     nitro = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
-    #
-    #     for item in self.state.items:
-    #         if item.type in nitro:
-    #             itemLoc = np.array(item.location)
-    #             squared_dist = np.sum((kartLoc - itemLoc) ** 2, axis=0)
-    #             dist = np.sqrt(squared_dist)
-    #             if dist <= 1:
-    #                 return True
-    #     return False
-
-    # def _get_position(self) -> int:
-    #     overallDist = sorted(
-    #         [kart.overall_distance for kart in self.race.get_all_karts()], reverse=True
-    #     )
-    #     return overallDist.index(self.kart.overall_distance) + 1
-
     def get_info(self) -> dict:
         info = {}
 
+        # basic info
         info["done"] = self.is_done()
         info["jumping"] = self._get_jumping()
         info["powerup"] = self._get_powerup()
@@ -104,13 +92,13 @@ class Kart:
         info["is_inside_track"] = self._get_is_inside_track()
         info["overall_distance"] = self._get_overall_distance()
 
+        # count info
         info["jump_count"] = self.jump_count
         info["backward_count"] = self.backward_count
         info["no_movement_count"] = self.no_movement_count
         info["out_of_track_count"] = self.out_of_track_count
 
-        # info["nitro"] = self._check_nitro()
-        # info["position"] = self._get_position()
+        # info based on _prev_info
         if len(self._prev_info) == 0:
             self._prev_info = info
 
@@ -135,7 +123,7 @@ class Kart:
         if not info["is_inside_track"]:
             self.out_of_track_count += 1
 
-        delta_dist = info['delta_dist']
+        delta_dist = info["delta_dist"]
         if delta_dist < 0:
             self.backward_count += 1
         elif delta_dist == 0:
@@ -148,8 +136,4 @@ class Kart:
         return info
 
     def reset(self):
-        self._node_idx = 0
-        self.jump_count = 0
-        self.backward_count = 0
-        self.no_movement_count = 0
-        self.out_of_track_count = 0
+        self._init_vars()

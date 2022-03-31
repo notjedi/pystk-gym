@@ -1,10 +1,12 @@
-from typing import List, Optional, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
 import gym
 import numpy as np
 import pystk
+from gym import spaces
 
 from ..common.actions import ActionType
+from ..common.graphics import GraphicConfig
 from ..common.kart import Kart
 from ..common.race import Race, RaceConfig
 
@@ -12,80 +14,117 @@ from ..common.race import Race, RaceConfig
 class AbstractEnv(gym.Env):
     def __init__(
         self,
+        graphic_config: GraphicConfig,
         race_config: RaceConfig,
         action_type: ActionType,
-        reward_func: RewardType,
-        observation_type: ObservationType,
+        reward_func: Callable,
+        max_step_cnt: int,
     ):
         # TODO: accept config instead of actual objects and use self.configure()
         # TODO: init with default config
         self.reward_func = reward_func
         self.action_type = action_type
-        self.observation_type = observation_type
-        self.configure(race_config)
+        self.max_step_cnt = max_step_cnt
 
-        self.done = False
-        self.steps = 0
+        # configure and init pystk
+        self.configure(graphic_config, race_config)
+        self.define_spaces()
+        pystk.init(self.graphics)
+
+        # init karts
         is_reverse, path_width, path_lines, path_distance = (
-            self.race.get_race_info()['reverse'],
+            self.race.get_race_info()["reverse"],
             self.race.get_path_width(),
             self.race.get_path_lines(),
             self.race.get_path_distance(),
         )
         self.controlled_karts = [
-            Kart(kart, self.observation_type, is_reverse, path_width, path_lines, path_distance)
+            Kart(
+                kart,
+                is_reverse,
+                path_width,
+                path_lines,
+                path_distance,
+            )
             for kart in self.race.get_controlled_karts()
         ]
-        self.define_spaces()
+        self._init_vars()
 
-    def seed(self, seed: int):
+    def _init_vars(self):
+        self.done = False
+        self.steps = 0
+
+    def _obs_space_from_graphics(self) -> spaces.Space:
+        return spaces.Box(
+            low=np.zeros(self.observation_shape, dtype=np.float32),
+            high=np.full(self.observation_shape, 255, dtype=np.float32),
+        )
+
+    def seed(self, seed: int) -> None:
         raise NotImplementedError
 
     def configure(
         self,
+        graphic_config: GraphicConfig,
         race_config: RaceConfig,
-    ):
-        self.race = Race(race_config.get_race_config())
+    ) -> None:
+        self.graphics = graphic_config.get_pystk_config()
+        self.race = Race(race_config.get_pystk_config())
+        self.observation_shape = (
+            self.graphics.screen_height,
+            self.graphics.screen_width,
+            3,
+        )
 
-    def define_spaces(self):
-        self.observation_space = self.observation_type.space()
+    def define_spaces(self) -> None:
+        self.observation_space = self._obs_space_from_graphics()
         self.action_space = self.action_type.space()
 
     def step(
         self, actions: Union[np.ndarray, list, dict]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
 
+        self.steps += 1
+        actions = self._action(actions)
+
         self.race.step(actions)
-        obs = np.array([kart.observe() for kart in self.controlled_karts])
+        obs = self.race.observe()
+        # obs = np.array([kart.observe() for kart in self.controlled_karts])
         infos = [kart.step() for kart in self.controlled_karts]
         rewards = self._reward(actions, infos)
         terminal = self._terminal(infos)
 
         # TODO: how should i update self.done
-        dones = self._is_done()
-        self.done = any(dones)
+        # dones = self._is_done()
+        # self.done = any(dones)
 
         return obs, rewards, terminal, infos
 
     def _terminal(self, infos: List[dict]) -> List[bool]:
         raise NotImplementedError
 
+    def _action(self, actions) -> List[pystk.Action]:
+        return [self.action_type.get_actions(action) for action in actions]
+
     def _reward(self, actions, infos) -> List[float]:
-        return [self.reward_func.get_rewards(action, info) for action, info in zip(actions, infos)]
+        return [self.reward_func(action, info) for action, info in zip(actions, infos)]
 
     def _is_done(self) -> List[bool]:
-        return [kart.is_done() for kart in self.controlled_karts]
+        return [self.steps > self.max_step_cnt] * len(self.controlled_karts) or [
+            kart.is_done() for kart in self.controlled_karts
+        ]
+
+    def _reset(self) -> None:
+        raise NotImplementedError
 
     def reset(self) -> np.ndarray:
         self.done = False
         self._reset()
         for kart in self.controlled_karts:
             kart.reset()
+        # BUG: using reset here would not restart the race
         obs = self.race.reset()
         return obs
-
-    def _reset(self) -> None:
-        raise NotImplementedError
 
     def close(self):
         self.done = True
