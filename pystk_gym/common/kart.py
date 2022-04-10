@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import pystk
 from sympy import Point3D

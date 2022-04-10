@@ -9,50 +9,17 @@ from sympy import Line3D
 
 
 class RaceConfig:
-
     TRACKS = [
-        "abyss",
-        "black_forest",
-        "candela_city",
-        "cocoa_temple",
-        "cornfield_crossing",
-        "fortmagma",
-        "gran_paradiso_island",
-        "hacienda",
-        "lighthouse",
-        "minigolf",
-        "olivermath",
-        "ravenbridge_mansion",
-        "sandtrack",
-        "scotland",
-        "snowmountain",
-        "snowtuxpeak",
-        "stk_enterprise",
-        "volcano_island",
-        "xr591",
-        "zengarden",
-    ]
-
+        "abyss", "black_forest", "candela_city", "cocoa_temple", "cornfield_crossing", "fortmagma",
+        "gran_paradiso_island", "hacienda", "lighthouse", "minigolf", "olivermath",
+        "ravenbridge_mansion", "sandtrack", "scotland", "snowmountain", "snowtuxpeak",
+        "stk_enterprise", "volcano_island", "xr591", "zengarden"
+    ]  # fmt: skip
     KARTS = [
-        "adiumy",
-        "amanda",
-        "beastie",
-        "emule",
-        "gavroche",
-        "gnu",
-        "hexley",
-        "kiki",
-        "konqi",
-        "nolok",
-        "pidgin",
-        "puffy",
-        "sara_the_racer",
-        "sara_the_wizard",
-        "suzanne",
-        "tux",
-        "wilber",
-        "xue",
-    ]
+        "adiumy", "amanda", "beastie", "emule", "gavroche", "gnu", "hexley", "kiki", "konqi",
+        "nolok", "pidgin", "puffy", "sara_the_racer", "sara_the_wizard", "suzanne", "tux", "wilber",
+        "xue"
+    ]  # fmt: skip
 
     def __init__(
         self,

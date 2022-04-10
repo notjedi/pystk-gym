@@ -7,7 +7,6 @@ from gym import spaces
 
 from ..common.actions import ActionType
 from ..common.graphics import GraphicConfig
-from ..common.kart import Kart
 from ..common.race import Race, RaceConfig
 
 
