@@ -19,7 +19,6 @@ class Kart:
         self.path_width = path_width
         self.path_lines = path_lines
         self.path_distance = path_distance
-        self._init_vars()
 
     def _init_vars(self):
         self._node_idx = 0
@@ -65,12 +64,11 @@ class Kart:
         return path_node.distance(Point3D(location)).evalf()
 
     def _get_is_inside_track(self):
-        # divide path_width by 2 because it's the width of the current path node
-        # and the dist of kart is from the center line
+        # TODO: is 1 a sensitive tolerance to add? or should i change the value?
         # TODO: add user defined tolerance
         curr_path_width = self.path_width[self._node_idx][0]
         kart_dist = self._get_kart_dist_from_center()
-        return kart_dist <= curr_path_width / 2
+        return kart_dist <= ((curr_path_width / 2) + 1)
 
     def _get_velocity(self):
         # returns the magnitude of velocity

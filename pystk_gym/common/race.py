@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional, Union, List
+from typing import Iterable, List, Optional, Union
 
 import numpy as np
 import pystk
@@ -101,7 +101,7 @@ class RaceConfig:
     @staticmethod
     def get_race_config(
         track: str | None = None,
-        kart: str | None = None,
+        karts: str | List[str] | None = None,
         num_karts: int = 5,
         laps: int = 1,
         reverse: bool | None = None,
@@ -111,16 +111,27 @@ class RaceConfig:
     ) -> pystk.RaceConfig:
 
         track = choice(RaceConfig.TRACKS) if track is None else track
-        kart = choice(RaceConfig.KARTS) if kart is None else kart
+        karts = choice(RaceConfig.KARTS) if karts is None else karts
         reverse = choice([True, False]) if reverse is None else reverse
 
         # add a matrix/grid check test to check all combinations of TRACKS and KARTS
-        # TODO: add tests to assert all tracks work
-        # TODO: add fps kinda thing in hertz like highway_env - is this what essentially what
-        # step_size does?
-        # TODO: check if range of difficulty is 1-3
+        # TODO: TESTS add tests to assert all tracks work
+        # TODO: TESTS check if range of difficulty is 1-3
+        # TODO: add fps kinda thing in hertz like highway_env - is this what step_size does?
+        if isinstance(karts, list):
+            assert set(karts).issubset(
+                RaceConfig.KARTS
+            ), f"{karts} contains 1 or more invalid karts"
+            assert len(karts) == num_karts_controlled
+        elif isinstance(karts, str):
+            assert karts in RaceConfig.KARTS, f"{karts} is not a valid kart."
+            karts = [karts] * num_karts_controlled
+        elif karts is None:
+            import random
+
+            karts = random.choices(np.array(RaceConfig.KARTS), k=num_karts_controlled)
+
         assert track in RaceConfig.TRACKS, f"{track} is not a valid track."
-        assert kart in RaceConfig.KARTS, f"{kart} is not a valid kart."
         assert 1 <= difficulty <= 3, f"{difficulty} should be between 1 and 3 (inclusive)"
 
         config = pystk.RaceConfig()
@@ -131,11 +142,7 @@ class RaceConfig:
         config.difficulty = difficulty
         config.step_size = step_size
 
-        # TODO: differnt karts for different players
-        # TODO: try to parameterize team after testing
-        # BUG, MAJOR TODO
-        # TODO: get image frame of all team players to speed up training
-        for i in range(num_karts_controlled):
+        for i, kart in enumerate(karts):
             config.players[i].team = 0
             config.players[i].kart = kart
             config.players[i].controller = pystk.PlayerConfig.Controller.PLAYER_CONTROL
@@ -149,13 +156,9 @@ class Race:
         self.race = pystk.Race(self.config)
         self.track = pystk.Track()
         self.state = pystk.WorldState()
-
-        self._node_idx = 0
         self.reverse = self.config.reverse
-        self.controlled_karts_idxs = None
 
     def get_race_info(self) -> dict:
-        # TODO: should i do return self.config.__dict__?
         info = {}
         info["laps"] = self.config.laps
         info["track"] = self.config.track
@@ -199,6 +202,7 @@ class Race:
         return self.controlled_karts_idxs
 
     def step(self, actions: Optional[Union[pystk.Action, Iterable[pystk.Action]]]) -> np.ndarray:
+        # TODO: TESTS: make sure that each action maps to the corresponding kart
         if actions is not None:
             self.race.step(actions)
         else:
@@ -211,12 +215,19 @@ class Race:
     def observe(self) -> np.ndarray:
         return np.array(self.race.render_data)[self.get_controlled_kart_idxs()]
 
+    def _init_vars(self) -> None:
+        self._node_idx = 0
+        self.controlled_karts_idxs = None
+
     def reset(self) -> np.ndarray:
+        self.done = False
+        self._init_vars()
+
         self.race.start()
         self.race.step()
         self.state.update()
         self.track.update()
-        self.done = False
+
         return self.observe()
 
     def close(self) -> None:
