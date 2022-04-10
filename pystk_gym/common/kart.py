@@ -116,6 +116,9 @@ class Kart:
 
         return info
 
+    def get_prev_info(self) -> dict:
+        return self._prev_info
+
     def step(self) -> dict:
         self._update_node_idx()
         info = self.get_info()

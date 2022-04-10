@@ -63,7 +63,7 @@ class RaceConfig:
         reverse: bool | None = None,
         difficulty: int = 1,
         step_size: float = 0.045,
-        self_control: bool = False,
+        num_karts_controlled: int = 4,
     ) -> None:
         self.track = track
         self.kart = kart
@@ -72,7 +72,7 @@ class RaceConfig:
         self.reverse = reverse
         self.difficulty = difficulty
         self.step_size = step_size
-        self.self_control = self_control
+        self.num_karts_controlled = num_karts_controlled
 
     def get_pystk_config(self) -> pystk.RaceConfig:
         return self.get_race_config(
@@ -83,7 +83,7 @@ class RaceConfig:
             self.reverse,
             self.difficulty,
             self.step_size,
-            self.self_control,
+            self.num_karts_controlled,
         )
 
     @staticmethod
@@ -95,6 +95,7 @@ class RaceConfig:
             laps=1,
             reverse=False,
             difficulty=1,
+            num_karts_controlled=4,
         )
 
     @staticmethod
@@ -106,7 +107,7 @@ class RaceConfig:
         reverse: bool | None = None,
         difficulty: int = 1,
         step_size: float = 0.045,
-        self_control: bool = False,
+        num_karts_controlled: int = 4,
     ) -> pystk.RaceConfig:
 
         track = choice(RaceConfig.TRACKS) if track is None else track
@@ -114,12 +115,13 @@ class RaceConfig:
         reverse = choice([True, False]) if reverse is None else reverse
 
         # add a matrix/grid check test to check all combinations of TRACKS and KARTS
-        # TODO: assert all tracks work
-        # TODO: assert difficulty
-        # TODO: add fps kinda thing in hertz like highway_env
-        # range of difficulty is 1-3 # TODO: check
-        assert track in RaceConfig.TRACKS
-        assert kart in RaceConfig.KARTS
+        # TODO: add tests to assert all tracks work
+        # TODO: add fps kinda thing in hertz like highway_env - is this what essentially what
+        # step_size does?
+        # TODO: check if range of difficulty is 1-3
+        assert track in RaceConfig.TRACKS, f"{track} is not a valid track."
+        assert kart in RaceConfig.KARTS, f"{kart} is not a valid kart."
+        assert 1 <= difficulty <= 3, f"{difficulty} should be between 1 and 3 (inclusive)"
 
         config = pystk.RaceConfig()
         config.track = track
@@ -129,15 +131,14 @@ class RaceConfig:
         config.difficulty = difficulty
         config.step_size = step_size
 
+        # TODO: differnt karts for different players
         # TODO: try to parameterize team after testing
+        # BUG, MAJOR TODO
         # TODO: get image frame of all team players to speed up training
-        config.players[0].team = 0
-        config.players[0].kart = kart
-        config.players[0].controller = (
-            pystk.PlayerConfig.Controller.AI_CONTROL
-            if self_control
-            else pystk.PlayerConfig.Controller.PLAYER_CONTROL
-        )
+        for i in range(num_karts_controlled):
+            config.players[i].team = 0
+            config.players[i].kart = kart
+            config.players[i].controller = pystk.PlayerConfig.Controller.PLAYER_CONTROL
         return config
 
 
