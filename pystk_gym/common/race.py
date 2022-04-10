@@ -28,6 +28,7 @@ class RaceConfig:
         num_karts: int = 5,
         laps: int = 1,
         reverse: bool | None = None,
+        seed: int = 1337,
         difficulty: int = 1,
         step_size: float = 0.045,
         num_karts_controlled: int = 4,
@@ -37,6 +38,7 @@ class RaceConfig:
         self.num_karts = num_karts
         self.laps = laps
         self.reverse = reverse
+        self.seed = seed
         self.difficulty = difficulty
         self.step_size = step_size
         self.num_karts_controlled = num_karts_controlled
@@ -48,6 +50,7 @@ class RaceConfig:
             self.num_karts,
             self.laps,
             self.reverse,
+            self.seed,
             self.difficulty,
             self.step_size,
             self.num_karts_controlled,
@@ -61,6 +64,7 @@ class RaceConfig:
             num_karts=5,
             laps=1,
             reverse=False,
+            seed=1337,
             difficulty=1,
             num_karts_controlled=4,
         )
@@ -72,6 +76,7 @@ class RaceConfig:
         num_karts: int = 5,
         laps: int = 1,
         reverse: bool | None = None,
+        seed: int = 1337,
         difficulty: int = 1,
         step_size: float = 0.045,
         num_karts_controlled: int = 4,
@@ -106,6 +111,7 @@ class RaceConfig:
         config.num_kart = num_karts
         config.laps = laps
         config.reverse = reverse
+        config.seed = seed
         config.difficulty = difficulty
         config.step_size = step_size
 

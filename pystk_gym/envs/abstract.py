@@ -7,6 +7,7 @@ from gym import spaces
 
 from ..common.actions import ActionType
 from ..common.graphics import GraphicConfig
+from ..common.kart import Kart
 from ..common.race import Race, RaceConfig
 
 
@@ -47,7 +48,9 @@ class AbstractEnv(gym.Env):
         return [self.reward_func(action, info) for action, info in zip(actions, infos)]
 
     def _is_done(self) -> List[bool]:
-        return [self.steps > self.max_step_cnt or kart.is_done for kart in self.controlled_karts]
+        return [
+            self.steps > self.max_step_cnt or kart.is_done() for kart in self.get_controlled_karts()
+        ]
 
     def _terminal(self, infos: List[dict]) -> List[bool]:
         raise NotImplementedError
@@ -72,7 +75,7 @@ class AbstractEnv(gym.Env):
         self.observation_space = self._obs_space_from_graphics()
         self.action_space = self.action_type.space()
 
-    def seed(self, seed: int) -> None:
+    def get_controlled_karts(self) -> List[Kart]:
         raise NotImplementedError
 
     def step(
@@ -83,7 +86,7 @@ class AbstractEnv(gym.Env):
         actions = self._action(actions)
 
         obs = self.race.step(actions)
-        infos = [kart.step() for kart in self.controlled_karts]
+        infos = [kart.step() for kart in self.get_controlled_karts()]
         rewards = self._reward(actions, infos)
         terminals = self._terminal(infos)
 
@@ -98,7 +101,7 @@ class AbstractEnv(gym.Env):
         self._reset()
 
         obs = self.race.reset()
-        for kart in self.race.get_controlled_karts():
+        for kart in self.get_controlled_karts():
             kart.reset()
         return obs
 

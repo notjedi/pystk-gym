@@ -4,6 +4,7 @@ from sympy import Point3D
 
 
 class Kart:
+    # TODO: add more info from race.py (like position among players, etc)
     def __init__(
         self,
         kart: pystk.Kart,
@@ -98,6 +99,7 @@ class Kart:
         if len(self._prev_info) == 0:
             self._prev_info = info
 
+        # TODO: check if vals(backward and no_movement) are assigned correctly
         delta_dist = info["overall_distance"] - self._prev_info["overall_distance"]
         info["delta_dist"] = delta_dist
         if delta_dist < 0:
