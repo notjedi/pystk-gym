@@ -20,8 +20,6 @@ class AbstractEnv(gym.Env):
         reward_func: Callable,
         max_step_cnt: int,
     ):
-        # TODO: accept config instead of actual objects and use self.configure()
-        # TODO: init with default config
         self.reward_func = reward_func
         self.action_type = action_type
         self.max_step_cnt = max_step_cnt
@@ -84,20 +82,19 @@ class AbstractEnv(gym.Env):
         self, actions: Union[np.ndarray, list, dict]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
 
+        # TODO: it would be nice if I could uee `observer()` from the Kart object itself without
+        # passing in reference of race to the Kart obj
+
         self.steps += 1
         actions = self._action(actions)
 
         self.race.step(actions)
         obs = self.race.observe()
-        # obs = np.array([kart.observe() for kart in self.controlled_karts])
         infos = [kart.step() for kart in self.controlled_karts]
         rewards = self._reward(actions, infos)
-        terminal = self._terminal(infos)
+        terminals = self._terminal(infos)
 
-        # TODO: how should i update self.done
-        # dones = self._is_done()
-        # self.done = any(dones)
-
+        self.done = any(terminals)
         return obs, rewards, terminal, infos
 
     def _terminal(self, infos: List[dict]) -> List[bool]:

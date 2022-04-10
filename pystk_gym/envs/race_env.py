@@ -14,16 +14,21 @@ class RaceEnv(AbstractEnv):
         self.action_type = action_type
         self.reverse = self.race.get_config().reverse
 
+    def seed(self, seed: int) -> None:
+        raise NotImplementedError
+
     def _terminal(self, infos):
+        step_limit_reached = self.steps > self.max_step_cnt
+        return [
+            info['is_inside_track']
+            or info['backward']
+            or info['no_movement']
+            or step_limit_reached
+            for info in infos
+        ]
 
-        is_terminal = []
-        for info in infos:
-            is_terminal.append(info["is_inside_track"])
-            is_terminal.append(info["backward"])
-            is_terminal.append(info["no_movement"])
-            is_terminal.append(info["is_inside_track"])
-
-        return any(is_terminal)
+    def _reset(self) -> None:
+        raise NotImplementedError
 
     def done(self):
-        raise NotImplementedError
+        return self.done
