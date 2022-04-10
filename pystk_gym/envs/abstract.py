@@ -12,6 +12,9 @@ from ..common.race import Race, RaceConfig
 
 
 class AbstractEnv(gym.Env):
+
+    # TODO: TESTS check env or add tests with `from stable_baselines3.common.env_checker import
+    # check_env`
     def __init__(
         self,
         graphic_config: GraphicConfig,
@@ -26,27 +29,7 @@ class AbstractEnv(gym.Env):
 
         # configure and init pystk
         self.configure(graphic_config, race_config)
-        self.define_spaces()
         pystk.init(self.graphics)
-
-        # init karts
-        is_reverse, path_width, path_lines, path_distance = (
-            self.race.get_race_info()["reverse"],
-            self.race.get_path_width(),
-            self.race.get_path_lines(),
-            self.race.get_path_distance(),
-        )
-        self.controlled_karts = [
-            Kart(
-                kart,
-                is_reverse,
-                path_width,
-                path_lines,
-                path_distance,
-            )
-            for kart in self.race.get_controlled_karts()
-        ]
-        self._init_vars()
 
     def _init_vars(self):
         self.done = False
@@ -58,7 +41,19 @@ class AbstractEnv(gym.Env):
             high=np.full(self.observation_shape, 255, dtype=np.float32),
         )
 
-    def seed(self, seed: int) -> None:
+    def _action(self, actions) -> List[pystk.Action]:
+        return [self.action_type.get_actions(action) for action in actions]
+
+    def _reward(self, actions, infos) -> List[float]:
+        return [self.reward_func(action, info) for action, info in zip(actions, infos)]
+
+    def _is_done(self) -> List[bool]:
+        return [self.steps > self.max_step_cnt or kart.is_done for kart in self.controlled_karts]
+
+    def _terminal(self, infos: List[dict]) -> List[bool]:
+        raise NotImplementedError
+
+    def _reset(self) -> None:
         raise NotImplementedError
 
     def configure(
@@ -78,49 +73,34 @@ class AbstractEnv(gym.Env):
         self.observation_space = self._obs_space_from_graphics()
         self.action_space = self.action_type.space()
 
+    def seed(self, seed: int) -> None:
+        raise NotImplementedError
+
     def step(
         self, actions: Union[np.ndarray, list, dict]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
 
-        # TODO: it would be nice if I could uee `observer()` from the Kart object itself without
-        # passing in reference of race to the Kart obj
-
         self.steps += 1
         actions = self._action(actions)
 
-        self.race.step(actions)
-        obs = self.race.observe()
+        obs = self.race.step(actions)
         infos = [kart.step() for kart in self.controlled_karts]
         rewards = self._reward(actions, infos)
         terminals = self._terminal(infos)
 
         self.done = any(terminals)
-        return obs, rewards, terminal, infos
-
-    def _terminal(self, infos: List[dict]) -> List[bool]:
-        raise NotImplementedError
-
-    def _action(self, actions) -> List[pystk.Action]:
-        return [self.action_type.get_actions(action) for action in actions]
-
-    def _reward(self, actions, infos) -> List[float]:
-        return [self.reward_func(action, info) for action, info in zip(actions, infos)]
-
-    def _is_done(self) -> List[bool]:
-        return [self.steps > self.max_step_cnt] * len(self.controlled_karts) or [
-            kart.is_done() for kart in self.controlled_karts
-        ]
-
-    def _reset(self) -> None:
-        raise NotImplementedError
+        return obs, rewards, terminals, infos
 
     def reset(self) -> np.ndarray:
-        self.done = False
-        self._reset()
-        for kart in self.controlled_karts:
-            kart.reset()
         # BUG: using reset here would not restart the race
+        self.done = False
+        self.define_spaces()
+        self._init_vars()
+        self._reset()
+
         obs = self.race.reset()
+        for kart in self.race.get_controlled_karts():
+            kart.reset()
         return obs
 
     def close(self):
