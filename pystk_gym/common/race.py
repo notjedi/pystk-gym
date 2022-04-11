@@ -174,6 +174,16 @@ class Race:
             ]
         return self.controlled_karts_idxs
 
+    def get_nitro_locs(self) -> np.ndarray:
+        NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
+        return np.array([item.location for item in self.state.items if item in NITRO_TYPE])
+
+    def get_all_kart_positions(self) -> dict:
+        overall_dists = {kart.id: kart.overall_distance for kart in self.get_all_karts()}
+        return {
+            id: i for i, (id, _) in enumerate(sorted(overall_dists.items(), key=lambda x: x[1]))
+        }
+
     def step(self, actions: Optional[Union[pystk.Action, Iterable[pystk.Action]]]) -> np.ndarray:
         # TODO: TESTS: make sure that each action maps to the corresponding kart
         if actions is not None:

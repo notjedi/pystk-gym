@@ -14,6 +14,10 @@ class Kart:
         path_distance: np.ndarray,
     ) -> None:
         self.kart = kart
+        self.id = self.kart.id
+        self.kart_name = self.kart.name
+        self.player_id = self.kart.player_id
+
         self.is_reverse = is_reverse
         self.path_width = path_width
         self.path_lines = path_lines
@@ -56,6 +60,10 @@ class Kart:
     def _get_overall_distance(self) -> int:
         return max(0, self.kart.overall_distance)
 
+    # TODO: add return type
+    def _get_location(self):
+        return self.kart.lcoation
+
     def _get_kart_dist_from_center(self):
         # compute the dist b/w the kart and the center of the track
         location = self.kart.location
@@ -83,6 +91,7 @@ class Kart:
         info["done"] = self.is_done()
         info["jumping"] = self._get_jumping()
         info["powerup"] = self._get_powerup()
+        info["location"] = self._get_location()
         info["velocity"] = self._get_velocity()
         info["attachment"] = self._get_attachment()
         info["finish_time"] = self._get_finish_time()
