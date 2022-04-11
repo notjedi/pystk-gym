@@ -78,6 +78,11 @@ class AbstractEnv(gym.Env):
     def get_controlled_karts(self) -> List[Kart]:
         raise NotImplementedError
 
+    def _step(
+        self, obs, rewards, terminals, infos
+    ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
+        return obs, rewards, terminals, infos
+
     def step(
         self, actions: Union[np.ndarray, list, dict]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
@@ -91,6 +96,7 @@ class AbstractEnv(gym.Env):
         terminals = self._terminal(infos)
 
         self.done = any(terminals)
+        obs, rewards, terminals, infos = self._step(obs, rewards, terminals, infos)
         return obs, rewards, terminals, infos
 
     def reset(self) -> np.ndarray:
