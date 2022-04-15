@@ -117,4 +117,4 @@ class MultiDiscreteAction(ActionType):
             return self._get_actions_from_dict(actions)
         if isinstance(actions, (list, np.ndarray)):
             return self._get_actions_from_list(actions)
-        raise NotImplementedError()
+        raise NotImplementedError

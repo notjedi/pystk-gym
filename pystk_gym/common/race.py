@@ -31,7 +31,7 @@ class RaceConfig:
         seed: int = 1337,
         difficulty: int = 1,
         step_size: float = 0.045,
-        num_karts_controlled: int = 4,
+        num_karts_controlled: int = 3,
     ) -> None:
         self.track = track
         self.kart = kart
@@ -66,7 +66,7 @@ class RaceConfig:
             reverse=False,
             seed=1337,
             difficulty=1,
-            num_karts_controlled=4,
+            num_karts_controlled=3,
         )
 
     @staticmethod
@@ -85,6 +85,7 @@ class RaceConfig:
         track = choice(RaceConfig.TRACKS) if track is None else track
         karts = choice(RaceConfig.KARTS) if karts is None else karts
         reverse = choice([True, False]) if reverse is None else reverse
+        assert num_karts > num_karts_controlled
 
         # add a matrix/grid check test to check all combinations of TRACKS and KARTS
         # TODO: TESTS add tests to assert all tracks work
@@ -115,9 +116,17 @@ class RaceConfig:
         config.difficulty = difficulty
         config.step_size = step_size
 
-        for kart in karts:
+        config.players[0].team = 0
+        config.players[0].kart = karts[0]
+        for kart in karts[1:]:
             config.players.append(
                 pystk.PlayerConfig(kart, pystk.PlayerConfig.Controller.PLAYER_CONTROL, 0)
+            )
+
+        # self controlled karts
+        for _ in range(num_karts - num_karts_controlled):
+            config.players.append(
+                pystk.PlayerConfig('', pystk.PlayerConfig.Controller.AI_CONTROL, 1)
             )
 
         return config
@@ -131,6 +140,7 @@ class Race:
         self.track = pystk.Track()
         self.state = pystk.WorldState()
         self.reverse = self.config.reverse
+        self._init_vars()
 
     def get_race_info(self) -> dict:
         info = {}
@@ -168,11 +178,16 @@ class Race:
         return list(np.array(self.get_all_karts())[self.get_controlled_kart_idxs()])
 
     def get_controlled_kart_idxs(self) -> list:
+        # there are better ways to do this but i think this is the best way to be sure that we are
+        # getting the correct player karts
         if self.controlled_karts_idxs is None:
-            self.controlled_karts_idxs = [
-                kart.controller == pystk.PlayerConfig.Controller.PLAYER_CONTROL
-                for kart in self.get_all_karts()
-            ]
+            self.controlled_karts_idxs = []
+            for i, (kart, player) in enumerate(zip(self.get_all_karts(), self.state.players)):
+                assert kart.id == player.kart.id
+                self.controlled_karts_idxs.append(
+                    self.config.players[i].controller
+                    == pystk.PlayerConfig.Controller.PLAYER_CONTROL
+                )
         return self.controlled_karts_idxs
 
     def get_nitro_locs(self) -> np.ndarray:
@@ -197,7 +212,9 @@ class Race:
         return self.observe()
 
     def observe(self) -> np.ndarray:
-        return np.array(self.race.render_data)[self.get_controlled_kart_idxs()]
+        return np.array(list(map(lambda x: x.image, self.race.render_data)), dtype=np.uint8)[
+            self.get_controlled_kart_idxs()
+        ]
 
     def _init_vars(self) -> None:
         self._node_idx = 0
@@ -212,6 +229,7 @@ class Race:
         self.state.update()
         self.track.update()
 
+        # fails `check_env` test because of vectorization
         return self.observe()
 
     def close(self) -> None:

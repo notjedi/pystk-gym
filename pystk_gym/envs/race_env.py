@@ -24,8 +24,6 @@ class RaceEnv(AbstractEnv):
     ):
 
         super().__init__(graphic_config, race_config, action_type, reward_func, max_step_cnt)
-        # TODO: should i add an kwargs argument for instantiating this class?
-        self.action_type = self.action_type_class()
         self._node_idx = 0
         self.reverse = self.race.get_config().reverse
 

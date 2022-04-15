@@ -32,11 +32,12 @@ class AbstractEnv(gym.Env):
             self.action_type_class = self._get_action_from_name(action_type)
         else:
             self.action_type_class = action_type
-        self.action_type = None
+        # TODO: should i add an kwargs argument for instantiating this class?
+        self.action_type = self.action_type_class()
 
-        self.done = False
-        self.steps = 0
+        self._init_vars()
         self.configure(graphic_config, race_config)
+        self.define_spaces()
 
     def _init_vars(self):
         self.done = False
@@ -44,8 +45,9 @@ class AbstractEnv(gym.Env):
 
     def _obs_space_from_graphics(self) -> spaces.Space:
         return spaces.Box(
-            low=np.zeros(self.observation_shape, dtype=np.float32),
-            high=np.full(self.observation_shape, 255, dtype=np.float32),
+            low=np.zeros(self.observation_shape, dtype=np.uint8),
+            high=np.full(self.observation_shape, 255, dtype=np.uint8),
+            dtype=np.uint8,
         )
 
     def _action(self, actions) -> List[pystk.Action]:
@@ -79,6 +81,7 @@ class AbstractEnv(gym.Env):
         pystk.init(self.graphics)
         self.race = Race(race_config.get_pystk_config())
         self.observation_shape = (
+            race_config.num_karts_controlled,
             self.graphics.screen_height,
             self.graphics.screen_width,
             3,
@@ -118,9 +121,9 @@ class AbstractEnv(gym.Env):
         self.done = False
         self.define_spaces()
         self._init_vars()
-        self._reset()
 
         obs = self.race.reset()
+        self._reset()
         for kart in self.get_controlled_karts():
             kart.reset()
         return obs
