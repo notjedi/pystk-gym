@@ -1,9 +1,9 @@
 from typing import Callable
 
+import numpy as np
+
 
 def get_reward_fn() -> Callable:
-
-    import numpy as np
 
     FINISH = 1
     COLLECT_POWERUP = 0.2

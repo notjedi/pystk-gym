@@ -38,7 +38,7 @@ class Kart:
             else self.kart.distance_down_track
         )
         path_dist = self.path_distance[self._node_idx]
-        while not (path_dist[0] <= dist_down_track <= path_dist[1]):
+        while not path_dist[0] <= dist_down_track <= path_dist[1]:
             if dist_down_track < path_dist[0]:
                 self._node_idx -= 1
             elif dist_down_track > path_dist[1]:

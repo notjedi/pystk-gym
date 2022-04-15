@@ -115,7 +115,6 @@ class MultiDiscreteAction(ActionType):
     def get_actions(self, actions: Union[np.ndarray, list, dict]) -> pystk.Action:
         if isinstance(actions, dict):
             return self._get_actions_from_dict(actions)
-        elif isinstance(actions, (list, np.ndarray)):
+        if isinstance(actions, (list, np.ndarray)):
             return self._get_actions_from_list(actions)
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
