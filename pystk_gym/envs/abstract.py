@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Type, Union
 
 import gym
 import numpy as np
@@ -13,23 +13,30 @@ from ..common.race import Race, RaceConfig
 
 class AbstractEnv(gym.Env):
 
+    action_aliases: Dict[str, Type[ActionType]] = {}
+
     # TODO: TESTS check env or add tests with `from stable_baselines3.common.env_checker import
     # check_env`
     def __init__(
         self,
         graphic_config: GraphicConfig,
         race_config: RaceConfig,
-        action_type: ActionType,
+        action_type: Union[Type[ActionType], str],
         reward_func: Callable,
         max_step_cnt: int,
     ):
         self.reward_func = reward_func
-        self.action_type = action_type
         self.max_step_cnt = max_step_cnt
 
-        # configure and init pystk
+        if isinstance(action_type, str):
+            self.action_type_class = self._get_action_from_name(action_type)
+        else:
+            self.action_type_class = action_type
+        self.action_type = None
+
+        self.done = False
+        self.steps = 0
         self.configure(graphic_config, race_config)
-        pystk.init(self.graphics)
 
     def _init_vars(self):
         self.done = False
@@ -52,6 +59,11 @@ class AbstractEnv(gym.Env):
             self.steps > self.max_step_cnt or kart.is_done() for kart in self.get_controlled_karts()
         ]
 
+    def _get_action_from_name(self, action_name: str) -> Type[ActionType]:
+        if action_name in self.action_aliases:
+            return self.action_aliases[action_name]
+        raise ValueError(f"Action {action_name} unknown")
+
     def _terminal(self, infos: List[dict]) -> List[bool]:
         raise NotImplementedError
 
@@ -64,6 +76,7 @@ class AbstractEnv(gym.Env):
         race_config: RaceConfig,
     ) -> None:
         self.graphics = graphic_config.get_pystk_config()
+        pystk.init(self.graphics)
         self.race = Race(race_config.get_pystk_config())
         self.observation_shape = (
             self.graphics.screen_height,
@@ -84,11 +97,11 @@ class AbstractEnv(gym.Env):
         return obs, rewards, terminals, infos
 
     def step(
-        self, actions: Union[np.ndarray, list, dict]
+        self, action: Union[np.ndarray, list, dict]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
 
         self.steps += 1
-        actions = self._action(actions)
+        actions = self._action(action)
 
         obs = self.race.step(actions)
         infos = [kart.step() for kart in self.get_controlled_karts()]
@@ -99,6 +112,7 @@ class AbstractEnv(gym.Env):
         obs, rewards, terminals, infos = self._step(obs, rewards, terminals, infos)
         return obs, rewards, terminals, infos
 
+    # TODO: make args compliant with gym.env.reset()
     def reset(self) -> np.ndarray:
         # BUG: using reset here would not restart the race
         self.done = False

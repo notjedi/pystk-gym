@@ -115,10 +115,11 @@ class RaceConfig:
         config.difficulty = difficulty
         config.step_size = step_size
 
-        for i, kart in enumerate(karts):
-            config.players[i].team = 0
-            config.players[i].kart = kart
-            config.players[i].controller = pystk.PlayerConfig.Controller.PLAYER_CONTROL
+        for kart in karts:
+            config.players.append(
+                pystk.PlayerConfig(kart, pystk.PlayerConfig.Controller.PLAYER_CONTROL, 0)
+            )
+
         return config
 
 

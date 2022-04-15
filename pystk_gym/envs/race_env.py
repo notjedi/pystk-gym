@@ -1,18 +1,32 @@
-from typing import List, Tuple
+from typing import Callable, Dict, List, Tuple, Type, Union
 
 import numpy as np
 
-from ..common.actions import ActionType
+from ..common.actions import ActionType, MultiDiscreteAction
+from ..common.graphics import GraphicConfig
 from ..common.kart import Kart
-from ..common.race import Race
+from ..common.race import RaceConfig
 from .abstract import AbstractEnv
 
 
 class RaceEnv(AbstractEnv):
-    def __init__(self, race: Race, action_type: ActionType):
-        self.race = race
+    action_aliases: Dict[str, Type[ActionType]] = {
+        "MultiDiscrete": MultiDiscreteAction,
+    }
+
+    def __init__(
+        self,
+        graphic_config: GraphicConfig,
+        race_config: RaceConfig,
+        action_type: Union[Type[ActionType], str],
+        reward_func: Callable,
+        max_step_cnt: int = 1000,
+    ):
+
+        super().__init__(graphic_config, race_config, action_type, reward_func, max_step_cnt)
+        # TODO: should i add an kwargs argument for instantiating this class?
+        self.action_type = self.action_type_class()
         self._node_idx = 0
-        self.action_type = action_type
         self.reverse = self.race.get_config().reverse
 
     def get_controlled_karts(self) -> List[Kart]:
@@ -58,7 +72,7 @@ class RaceEnv(AbstractEnv):
             kart_loc = np.array(info['location'])
             # TODO: make this more functional programming like
             info["nitro"] = any(
-                [np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs]
+                np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs
             )
 
         return obs, rewards, terminals, infos
@@ -66,5 +80,5 @@ class RaceEnv(AbstractEnv):
     def _reset(self) -> None:
         self._make_karts()
 
-    def done(self):
+    def is_done(self):
         return any(self._is_done())
