@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Union
+from typing import Iterable, List, Union
 
 import numpy as np
 import pystk
@@ -23,12 +23,14 @@ class ActionType:
         "rescue",
     ]
 
-    def __init__(self) -> None:
-        self.current_action = pystk.Action()
+    def __init__(self, action_space, action_list) -> None:
+        assert set(action_list).issubset(self.POSSIBLE_ACTIONS)
+        self.action_space = action_space
+        self.action_list = action_list
 
     def space(self) -> spaces.Space:
         """The action space."""
-        raise NotImplementedError()
+        return self.action_space
 
     def get_actions(self, actions: Union[np.ndarray, dict]) -> pystk.Action:
         """
@@ -66,17 +68,13 @@ class MultiDiscreteAction(ActionType):
         :param action_list: the names for each action in the action_space (names must be a subset of
         ActionType.POSSIBLE_ACTIONS)
         """
-        super().__init__()
-
-        assert set(action_list).issubset(self.POSSIBLE_ACTIONS)
-        self.action_space = action_space
-        self.action_list = action_list
+        super().__init__(action_space, action_list)
 
     def space(self) -> spaces.Space:
         return self.action_space
 
     def _get_action_obj(
-        self, keys: Iterable[str], values: Iterable[Union[int, float]]
+        self, action_names: Iterable[str], actions: Iterable[Union[int, float]]
     ) -> pystk.Action:
         """
         Returns a pystk.Action object after updating the keys with the corresponding values.
@@ -84,14 +82,14 @@ class MultiDiscreteAction(ActionType):
         :param keys: a list of action_names
         :param values: a list of action_values
         """
-        self.current_action = pystk.Action()
+        current_action = pystk.Action()
 
-        for key, value in zip(keys, values):
-            if key == "steer":
-                setattr(self.current_action, key, value - 1)
-            setattr(self.current_action, key, value)
+        for name, action in zip(action_names, actions):
+            if name == "steer":
+                setattr(current_action, name, action - 1)
+            setattr(current_action, name, action)
 
-        return self.current_action
+        return current_action
 
     def _get_actions_from_dict(self, actions: dict) -> pystk.Action:
         """
@@ -112,7 +110,7 @@ class MultiDiscreteAction(ActionType):
         assert self.action_space.contains(actions)
         return self._get_action_obj(self.action_list, actions)
 
-    def get_actions(self, actions: Union[np.ndarray, list, dict]) -> pystk.Action:
+    def get_actions(self, actions: Union[np.ndarray, List, dict]) -> pystk.Action:
         if isinstance(actions, dict):
             return self._get_actions_from_dict(actions)
         if isinstance(actions, (list, np.ndarray)):

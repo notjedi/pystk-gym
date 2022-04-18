@@ -21,22 +21,15 @@ class AbstractEnv(gym.Env):
         self,
         graphic_config: GraphicConfig,
         race_config: RaceConfig,
-        action_type: Union[Type[ActionType], str],
+        action_config: Dict,
         reward_func: Callable,
         max_step_cnt: int,
     ):
         self.reward_func = reward_func
         self.max_step_cnt = max_step_cnt
 
-        if isinstance(action_type, str):
-            self.action_type_class = self._get_action_from_name(action_type)
-        else:
-            self.action_type_class = action_type
-        # TODO: should i add an kwargs argument for instantiating this class?
-        self.action_type = self.action_type_class()
-
         self._init_vars()
-        self.configure(graphic_config, race_config)
+        self.configure(graphic_config, race_config, action_config)
         self.define_spaces()
 
     def _init_vars(self):
@@ -50,7 +43,7 @@ class AbstractEnv(gym.Env):
             dtype=np.uint8,
         )
 
-    def _action(self, actions) -> List[pystk.Action]:
+    def _action(self, actions: Union[np.ndarray, List, dict]) -> List[pystk.Action]:
         return [self.action_type.get_actions(action) for action in actions]
 
     def _reward(self, actions, infos) -> List[float]:
@@ -76,15 +69,28 @@ class AbstractEnv(gym.Env):
         self,
         graphic_config: GraphicConfig,
         race_config: RaceConfig,
+        action_config: Dict,
     ) -> None:
+
+        # graphics init
         self.graphics = graphic_config.get_pystk_config()
         pystk.init(self.graphics)
+
+        # race init
         self.race = Race(race_config.get_pystk_config())
         self.observation_shape = (
-            race_config.num_karts_controlled,
             self.graphics.screen_height,
             self.graphics.screen_width,
             3,
+        )
+
+        # action init
+        if isinstance(action_config['class'], str):
+            action_type_class = self._get_action_from_name(action_config['class'])
+        else:
+            action_type_class: Type[ActionType] = action_config['class']
+        self.action_type: ActionType = action_type_class(
+            action_config['space'], action_config['names']
         )
 
     def define_spaces(self) -> None:

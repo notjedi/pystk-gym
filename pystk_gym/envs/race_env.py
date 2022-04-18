@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, Type, Union
+from typing import Callable, Dict, List, Tuple, Type
 
 import numpy as np
 
@@ -18,12 +18,12 @@ class RaceEnv(AbstractEnv):
         self,
         graphic_config: GraphicConfig,
         race_config: RaceConfig,
-        action_type: Union[Type[ActionType], str],
+        action_config: Dict,
         reward_func: Callable,
         max_step_cnt: int = 1000,
     ):
 
-        super().__init__(graphic_config, race_config, action_type, reward_func, max_step_cnt)
+        super().__init__(graphic_config, race_config, action_config, reward_func, max_step_cnt)
         self._node_idx = 0
         self.reverse = self.race.get_config().reverse
 
