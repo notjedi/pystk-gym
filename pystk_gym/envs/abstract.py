@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, Type, Union, Optional
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import gym
 import numpy as np
@@ -6,7 +6,7 @@ import pystk
 from gym import spaces
 
 from ..common.actions import ActionType
-from ..common.graphics import GraphicConfig, EnvViewer
+from ..common.graphics import EnvViewer, GraphicConfig
 from ..common.kart import Kart
 from ..common.race import Race, RaceConfig
 
@@ -33,7 +33,7 @@ class AbstractEnv(gym.Env):
         self.max_step_cnt = max_step_cnt
 
         self._init_vars()
-        self.viewer = None
+        self.viewers = None
         self.configure(graphic_config, race_config, action_config)
         self.define_spaces()
 
@@ -127,12 +127,15 @@ class AbstractEnv(gym.Env):
         return obs, rewards, terminals, infos
 
     def render(self, mode: str = 'human') -> Optional[np.ndarray]:
-        if self.viewer is None:
-            self.viewer = EnvViewer(self.graphic_config, human_controlled=mode == 'human')
+        if self.viewers is None:
+            self.viewers = [
+                EnvViewer(human_controlled=mode == 'human')
+                for _ in range(len(self.get_controlled_karts()))
+            ]
 
-        # TODO: vectorize this
         obs = self.race.observe()
-        self.viewer.display(obs)
+        for image, viewer in zip(obs, self.viewers):
+            viewer.display(image)
         if mode == 'rgb_array':
             return obs
 
@@ -152,4 +155,8 @@ class AbstractEnv(gym.Env):
     def close(self):
         self.done = True
         self.race.close()
+        if self.viewers is not None:
+            # map(lambda viewer: viewer.close(), self.viewers)
+            for viewer in self.viewers:
+                viewer.close()
         pystk.clean()
