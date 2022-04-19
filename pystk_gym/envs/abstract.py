@@ -13,8 +13,8 @@ from ..common.race import Race, RaceConfig
 
 class AbstractEnv(gym.Env):
 
-    # TODO: TESTS check env or add tests with `from stable_baselines3.common.env_checker import
-    # check_env`
+    # TODO: TESTS check env or add tests with `from stable_baselines3.common.env_checker`
+    # TODO: add seed method
     action_aliases: Dict[str, Type[ActionType]] = {}
     metadata = {
         'render.modes': ['human', 'rgb_array'],
@@ -33,11 +33,11 @@ class AbstractEnv(gym.Env):
         self.max_step_cnt = max_step_cnt
 
         self._init_vars()
-        self.viewers = None
         self.configure(graphic_config, race_config, action_config)
         self.define_spaces()
 
     def _init_vars(self):
+        self.viewers = None
         self.done = False
         self.steps = 0
 
@@ -105,23 +105,30 @@ class AbstractEnv(gym.Env):
     def get_controlled_karts(self) -> List[Kart]:
         raise NotImplementedError
 
+    def get_actions_from_env_viewer(self) -> Optional[List[pystk.Action]]:
+        if self.viewers is not None:
+            return [viewer.get_action() for viewer in self.viewers]
+        return None
+
     def _step(
         self, obs, rewards, terminals, infos
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
         return obs, rewards, terminals, infos
 
     def step(
-        self, action: Union[np.ndarray, List, Dict]
+        self, action: Union[np.ndarray, List, Dict, pystk.Action]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
 
         self.steps += 1
         actions = self._action(action)
 
+        # TODO: take multiple steps? if so, i have to render intermediate steps
         obs = self.race.step(actions)
         infos = [kart.step() for kart in self.get_controlled_karts()]
         rewards = self._reward(actions, infos)
         terminals = self._terminal(infos)
 
+        # FIXME: this is always true
         self.done = any(terminals)
         obs, rewards, terminals, infos = self._step(obs, rewards, terminals, infos)
         return obs, rewards, terminals, infos
@@ -129,8 +136,8 @@ class AbstractEnv(gym.Env):
     def render(self, mode: str = 'human') -> Optional[np.ndarray]:
         if self.viewers is None:
             self.viewers = [
-                EnvViewer(human_controlled=mode == 'human')
-                for _ in range(len(self.get_controlled_karts()))
+                EnvViewer(human_controlled=mode == 'human', id=f'kart-{kart.id}')
+                for kart in self.get_controlled_karts()
             ]
 
         obs = self.race.observe()

@@ -11,7 +11,7 @@ from .abstract import AbstractEnv
 
 class RaceEnv(AbstractEnv):
     action_aliases: Dict[str, Type[ActionType]] = {
-        "MultiDiscrete": MultiDiscreteAction,
+        "MultiDiscreteAction": MultiDiscreteAction,
     }
 
     def __init__(

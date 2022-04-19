@@ -194,6 +194,7 @@ class Race:
         NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
         return np.array([item.location for item in self.state.items if item in NITRO_TYPE])
 
+    # TODO: rename this method to "position" as in lead
     def get_all_kart_positions(self) -> dict:
         overall_dists = {kart.id: kart.overall_distance for kart in self.get_all_karts()}
         return {

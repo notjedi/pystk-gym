@@ -62,7 +62,7 @@ class Kart:
 
     # TODO: add return type
     def _get_location(self):
-        return self.kart.lcoation
+        return self.kart.location
 
     def _get_kart_dist_from_center(self):
         # compute the dist b/w the kart and the center of the track

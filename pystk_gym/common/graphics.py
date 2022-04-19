@@ -7,7 +7,24 @@ import matplotlib
 import numpy as np
 import pystk
 
-for gui in ['MacOSX', 'Qt5Agg', 'TKAgg', 'GTKAgg', 'Qt4Agg', 'WXAgg']:
+for gui in [
+    'GTK3Agg',
+    'GTK3Cairo',
+    'GTK4Agg',
+    'GTK4Cairo',
+    'MacOSX',
+    'nbAgg',
+    'QtAgg',
+    'QtCairo',
+    'Qt5Agg',
+    'Qt5Cairo',
+    'TkAgg',
+    'TkCairo',
+    'WebAgg',
+    'WX',
+    'WXAgg',
+    'WXCairo',
+]:
     try:
         matplotlib.use(gui, force=True)
         import matplotlib.pyplot as plt
@@ -70,7 +87,7 @@ class GraphicConfig:
 
 
 class EnvViewer:
-    def __init__(self, human_controlled=False, id=1):
+    def __init__(self, human_controlled: bool = False, id: str = ''):
         self.human_controlled = human_controlled
         self.action = pystk.Action()
         self.visible = True
@@ -83,9 +100,6 @@ class EnvViewer:
 
         if human_controlled:
             self._key_state = set()
-            self.fig.canvas.mpl_connect(
-                'figure_enter_event', lambda *a, **ka: self._key_state.clear()
-            )
             self.fig.canvas.mpl_connect(
                 'figure_enter_event', lambda *a, **ka: self._key_state.clear()
             )
