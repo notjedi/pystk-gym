@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, Type, Union
+from typing import Callable, Dict, List, Tuple, Type, Union, Optional
 
 import gym
 import numpy as np
@@ -6,17 +6,20 @@ import pystk
 from gym import spaces
 
 from ..common.actions import ActionType
-from ..common.graphics import GraphicConfig
+from ..common.graphics import GraphicConfig, EnvViewer
 from ..common.kart import Kart
 from ..common.race import Race, RaceConfig
 
 
 class AbstractEnv(gym.Env):
 
-    action_aliases: Dict[str, Type[ActionType]] = {}
-
     # TODO: TESTS check env or add tests with `from stable_baselines3.common.env_checker import
     # check_env`
+    action_aliases: Dict[str, Type[ActionType]] = {}
+    metadata = {
+        'render.modes': ['human', 'rgb_array'],
+    }
+
     def __init__(
         self,
         graphic_config: GraphicConfig,
@@ -25,10 +28,12 @@ class AbstractEnv(gym.Env):
         reward_func: Callable,
         max_step_cnt: int,
     ):
+        self.graphic_config = graphic_config
         self.reward_func = reward_func
         self.max_step_cnt = max_step_cnt
 
         self._init_vars()
+        self.viewer = None
         self.configure(graphic_config, race_config, action_config)
         self.define_spaces()
 
@@ -106,7 +111,7 @@ class AbstractEnv(gym.Env):
         return obs, rewards, terminals, infos
 
     def step(
-        self, action: Union[np.ndarray, list, dict]
+        self, action: Union[np.ndarray, List, Dict]
     ) -> Tuple[np.ndarray, List[float], List[bool], List[dict]]:
 
         self.steps += 1
@@ -120,6 +125,16 @@ class AbstractEnv(gym.Env):
         self.done = any(terminals)
         obs, rewards, terminals, infos = self._step(obs, rewards, terminals, infos)
         return obs, rewards, terminals, infos
+
+    def render(self, mode: str = 'human') -> Optional[np.ndarray]:
+        if self.viewer is None:
+            self.viewer = EnvViewer(self.graphic_config, human_controlled=mode == 'human')
+
+        # TODO: vectorize this
+        obs = self.race.observe()
+        self.viewer.display(obs)
+        if mode == 'rgb_array':
+            return obs
 
     # TODO: make args compliant with gym.env.reset()
     def reset(self) -> np.ndarray:
