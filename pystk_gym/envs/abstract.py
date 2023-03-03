@@ -107,7 +107,7 @@ class AbstractEnv(gym.Env):
 
     def get_actions_from_env_viewer(self) -> Optional[List[pystk.Action]]:
         if self.viewers is not None:
-            return [viewer.get_action() for viewer in self.viewers]
+            return [self._action(viewer.get_action()) for viewer in self.viewers]
         return None
 
     def _step(
@@ -136,7 +136,9 @@ class AbstractEnv(gym.Env):
     def render(self, mode: str = 'human') -> Optional[np.ndarray]:
         if self.viewers is None:
             self.viewers = [
-                EnvViewer(human_controlled=mode == 'human', id=f'kart-{kart.id}')
+                EnvViewer(
+                    self.graphic_config, human_controlled=mode == 'human', id=f'kart-{kart.id}'
+                )
                 for kart in self.get_controlled_karts()
             ]
 

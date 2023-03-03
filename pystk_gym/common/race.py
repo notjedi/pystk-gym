@@ -66,7 +66,7 @@ class RaceConfig:
             reverse=False,
             seed=1337,
             difficulty=1,
-            num_karts_controlled=3,
+            num_karts_controlled=1,
         )
 
     @staticmethod
