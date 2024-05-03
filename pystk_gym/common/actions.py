@@ -1,47 +1,43 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Union
+from typing import Iterable, List, Union, Dict
 
 import numpy as np
+import numpy.typing as npt
 import pystk
-from gym import spaces
+from gymnasium import spaces
+
+ActionType = Union[
+    pystk.Action,
+    List[int | float],
+    Dict[str, int | float],
+    npt.NDArray[np.float64 | np.int64],
+]
 
 
-class ActionType:
+def get_stk_action_obj(
+    action_names: Iterable[str], actions_values: Iterable[int | float]
+) -> pystk.Action:
     """
-    A type of action specifies its definition space,
-    and how actions are executed in the environment.
+    Returns a pystk.Action object after updating the keys with the corresponding values.
+
+    :param keys: a list of action_names
+    :param values: a list of action_values
     """
+    #  0             1      2      3     4      5      6        # index
+    # [2,            2,     3,     2,    2,     2,     2]       # action_space
+    # {acceleration, brake, steer, fire, drift, nitro, rescue}  # fields
+    current_action = pystk.Action()
 
-    POSSIBLE_ACTIONS = [
-        "acceleration",
-        "brake",
-        "steer",
-        "fire",
-        "drift",
-        "nitro",
-        "rescue",
-    ]
+    for name, action in zip(action_names, actions_values):
+        if name == "steer":
+            setattr(current_action, name, action - 1)
+        setattr(current_action, name, action)
 
-    def __init__(self, action_space, action_list) -> None:
-        assert set(action_list).issubset(self.POSSIBLE_ACTIONS)
-        self.action_space = action_space
-        self.action_list = action_list
-
-    def space(self) -> spaces.Space:
-        """The action space."""
-        return self.action_space
-
-    def get_actions(self, actions: Union[np.ndarray, dict]) -> pystk.Action:
-        """
-        Returns a pystk.Action object after updating it with the given parameters.
-
-        :param actions: list of actions to be updated
-        """
-        raise NotImplementedError()
+    return current_action
 
 
-class MultiDiscreteAction(ActionType):
+class MultiDiscreteAction:
     """
     A dynamic user-defined MultiDiscrete action space.
 
@@ -58,38 +54,10 @@ class MultiDiscreteAction(ActionType):
     -----------------------------------------------------------------
     """
 
-    def __init__(
-        self,
-        action_space: spaces.Space = spaces.MultiDiscrete([2, 2, 3, 2, 2, 2, 2]),
-        action_list: Iterable[str] = ActionType.POSSIBLE_ACTIONS,
-    ) -> None:
-        """
-        :param action_space: a gym.spaces.Space object defining the action space
-        :param action_list: the names for each action in the action_space (names must be a subset of
-        ActionType.POSSIBLE_ACTIONS)
-        """
-        super().__init__(action_space, action_list)
+    ACTIONS = ["acceleration", "brake", "steer", "fire", "drift", "nitro", "rescue"]
 
-    def space(self) -> spaces.Space:
-        return self.action_space
-
-    def _get_action_obj(
-        self, action_names: Iterable[str], actions: Iterable[Union[int, float]]
-    ) -> pystk.Action:
-        """
-        Returns a pystk.Action object after updating the keys with the corresponding values.
-
-        :param keys: a list of action_names
-        :param values: a list of action_values
-        """
-        current_action = pystk.Action()
-
-        for name, action in zip(action_names, actions):
-            if name == "steer":
-                setattr(current_action, name, action - 1)
-            setattr(current_action, name, action)
-
-        return current_action
+    def __init__(self) -> None:
+        self.action_space = spaces.MultiDiscrete([2, 2, 3, 2, 2, 2, 2])
 
     def _get_actions_from_dict(self, actions: dict) -> pystk.Action:
         """
@@ -97,20 +65,20 @@ class MultiDiscreteAction(ActionType):
 
         :param actions: dict object mapping object_names to object_values
         """
-        assert self.action_space.contains(actions.values())
-        assert set(actions.keys()).issubset(self.action_list)
-        return self._get_action_obj(actions.keys(), actions.values())
+        return get_stk_action_obj(actions.keys(), actions.values())
 
-    def _get_actions_from_list(self, actions: Union[list, np.ndarray]) -> pystk.Action:
+    def _get_actions_from_list(
+        self, actions: Union[List[int | float], npt.NDArray[np.float64 | np.int64]]
+    ) -> pystk.Action:
         """
         Process a list of action values and returns a pystk.Action object.
 
         :param actions: action values
         """
         assert self.action_space.contains(actions)
-        return self._get_action_obj(self.action_list, actions)
+        return get_stk_action_obj(MultiDiscreteAction.ACTIONS, actions)
 
-    def get_actions(self, actions: Union[np.ndarray, List, dict]) -> pystk.Action:
+    def get_actions(self, actions: ActionType) -> pystk.Action:
         if isinstance(actions, dict):
             return self._get_actions_from_dict(actions)
         if isinstance(actions, (list, np.ndarray)):
@@ -118,3 +86,7 @@ class MultiDiscreteAction(ActionType):
         if isinstance(actions, pystk.Action):
             return actions
         raise NotImplementedError
+
+    def space(self) -> spaces.Space:
+        """The action space."""
+        return self.action_space

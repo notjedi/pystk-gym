@@ -1,10 +1,11 @@
-from typing import Callable
+from typing import Callable, List
 
 import numpy as np
 
+from actions import get_stk_action_obj, MultiDiscreteAction
+
 
 def get_reward_fn() -> Callable:
-
     FINISH = 1
     COLLECT_POWERUP = 0.2
     USE_POWERUP = 0.2
@@ -18,23 +19,20 @@ def get_reward_fn() -> Callable:
 
     no_movement_threshold = 5
 
-    def reward_fn(action, info):
+    def reward_fn(action: List[int], info):
+        stk_action = get_stk_action_obj(MultiDiscreteAction.ACTIONS, action)
 
         reward = -0.02
-        #  0             1      2      3     4      5      6
-        # {acceleration, brake, steer, fire, drift, nitro, rescue}
-        # [2,            2,     3,     2,    2,     2,     2]   # action_space
-        if action is not None:
-            if action[5] and info["nitro"]:
-                reward += NITRO
+        if stk_action.nitro and info["nitro"]:
+            reward += NITRO
 
-            if action[4] and info["velocity"] > 10:
-                reward += DRIFT
-            elif action[4] and info["velocity"] < 5:
-                reward -= DRIFT
+        if stk_action.drift and info["velocity"] > 10:
+            reward += DRIFT
+        elif stk_action.drift and info["velocity"] < 5:
+            reward -= DRIFT
 
-            if action[3] and info["powerup"].value:
-                reward += USE_POWERUP
+        if stk_action.fire and info["powerup"].value:
+            reward += USE_POWERUP
 
         if info["done"]:
             reward += FINISH
