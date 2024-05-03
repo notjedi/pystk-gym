@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import os
 from enum import Enum
 from typing import Set
 
-import os
 import numpy as np
-import pystk
 import pygame
+import pystk
 
 
 class GraphicQuality(Enum):
@@ -30,7 +30,9 @@ class GraphicQuality(Enum):
 
 
 class GraphicConfig:
-    def __init__(self, width: int, height: int, graphic_quality: GraphicQuality) -> None:
+    def __init__(
+        self, width: int, height: int, graphic_quality: GraphicQuality
+    ) -> None:
         """
         :param width: screen width
         :param height: screen height
@@ -60,75 +62,6 @@ class GraphicConfig:
         return config
 
 
-# class EnvViewer:
-#     def __init__(self, human_controlled: bool = False, id: str = ''):
-#         self.human_controlled = human_controlled
-#         self.action = pystk.Action()
-#         self.visible = True
-#         self.id = id
-#
-#         self.fig = plt.figure(num=id)
-#         self.axes = self.fig.add_subplot(1, 1, 1)
-#         self.axes.axis('off')
-#         self.fig.tight_layout(pad=0)
-#
-#         if human_controlled:
-#             self._key_state = set()
-#             self.fig.canvas.mpl_connect(
-#                 'figure_enter_event', lambda *a, **ka: self._key_state.clear()
-#             )
-#             self.fig.canvas.mpl_connect('key_release_event', self._on_key_release)
-#             self.fig.canvas.mpl_connect('key_press_event', self._on_key_press)
-#             self.fig.canvas.mpl_connect('close_event', self._close)
-#             # disable the default keys
-#             self.fig.canvas.mpl_disconnect(self.fig.canvas.manager.key_press_handler_id)
-#
-#     def _update_action(self, key_state: Set[str]):
-#         self.action.acceleration = int('w' in key_state or 'up' in key_state)
-#         self.action.brake = 's' in key_state or 'down' in key_state
-#         self.action.steer = int('d' in key_state or 'right' in key_state) - int(
-#             'a' in key_state or 'left' in key_state
-#         )
-#         self.action.fire = ' ' in key_state
-#         self.action.drift = 'm' in key_state
-#         self.action.nitro = 'n' in key_state
-#         self.action.rescue = 'r' in key_state
-#
-#     def _on_key_press(self, e):
-#         self._key_state.add(e.key)
-#         self._update_action(self._key_state)
-#         return True
-#
-#     def _on_key_release(self, e):
-#         if e.key == 'escape':
-#             self.visible = False
-#         else:
-#             if e.key in self._key_state:
-#                 self._key_state.remove(e.key)
-#             self._update_action(self._key_state)
-#         return True
-#
-#     def _close(self, e):
-#         self.visible = False
-#
-#     def display(self, render_data: np.ndarray):
-#         if hasattr(self.axes, '_im'):
-#             self.axes._im.set_data(render_data)
-#         else:
-#             # TODO: check if this is needed
-#             self.axes.imshow(render_data, interpolation='nearest')
-#         self.fig.canvas.draw()
-#         self.fig.canvas.flush_events()
-#
-#     def get_action(self) -> pystk.Action:
-#         return self.action
-#
-#     def close(self):
-#         # TODO:check if pyplot.close()
-#         plt.close()
-#         self.visible = False
-
-
 class EnvViewer:
     def __init__(self, graphic_config, human_controlled=False, id=1):
         self.screen_width = graphic_config.width
@@ -154,30 +87,35 @@ class EnvViewer:
         self.clock.tick(self.display_hertz)
         print(f"id:= {self.id}, FPS:= {self.clock.get_fps()}")
 
-    def get_action(self):
+    def get_action(self) -> pystk.Action:
         return self.action
 
     def handle_events(self):
         self.action = {}
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.action['quit'] = True
+                self.action["quit"] = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP or event.key == pygame.K_w:
-                    self.action['up'] = True
+                    self.action["up"] = True
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.action['down'] = True
+                    self.action["down"] = True
                 elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    self.action['right'] = True
+                    self.action["right"] = True
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    self.action['left'] = True
+                    self.action["left"] = True
 
                 elif event.key == pygame.K_SPACE:
-                    self.action['fire'] = True
+                    self.action["fire"] = True
                 elif event.key == pygame.K_m:
-                    self.action['drift'] = True
+                    self.action["drift"] = True
                 elif event.key == pygame.K_n:
-                    self.action['nitro'] = True
+                    self.action["nitro"] = True
                 elif event.key == pygame.K_r:
-                    self.action['rescue'] = True
+                    self.action["rescue"] = True
         return self.action
+
+    def close(self):
+        if self.screen is not None:
+            pygame.display.quit()
+            pygame.quit()
