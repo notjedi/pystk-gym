@@ -1,11 +1,10 @@
-from time import time
 from enum import Flag, auto
+from time import time
 from typing import Dict, Set
 
-
-import pystk
 import matplotlib
 import numpy as np
+import pystk
 from matplotlib import pyplot as plt
 
 
@@ -76,7 +75,7 @@ INSTANCE_COLOR = np.array(
     ],
     dtype=">u4",
 )
-np.random.RandomState(0).shuffle(INSTANCE_COLOR)
+np.random.shuffle(INSTANCE_COLOR)
 INSTANCE_COLOR = INSTANCE_COLOR.view(np.uint8).reshape((-1, 4))[:, 1:]
 
 RENDER_KWARGS = {
@@ -149,10 +148,10 @@ class BaseUI:
         # TODO: Complete
 
     def show(self, render_data: pystk.RenderData):
-        raise NotImplemented
+        raise NotImplementedError
 
     def sleep(self, s: float):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class NoUI(BaseUI):
@@ -205,7 +204,8 @@ class MplUI(BaseUI):
             self._fig.canvas.mpl_disconnect(
                 self._fig.canvas.manager.key_press_handler_id
             )
-        except:
+        except Exception as e:
+            print(f"Exception {e} while trying to disable default keys")
             pass
         self.visible = True
 
@@ -273,6 +273,8 @@ if __name__ == "__main__":
     if not found_backend:
         print("no backend available")
         exit(1)
+
+    matplotlib.rcParams["toolbar"] = "None"
 
     soccer_tracks = {"soccer_field", "icy_soccer_field"}
     arena_tracks = {"battleisland", "stadium"}
