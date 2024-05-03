@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
+import numpy.typing as npt
 import pystk
-from numpy.random import choice
 from sympy import Line3D
+
+ObsType = np.ndarray[np.ndarray, np.dtype[np.uint8]]
 
 
 class RaceConfig:
@@ -43,8 +45,8 @@ class RaceConfig:
         self.step_size = step_size
         self.num_karts_controlled = num_karts_controlled
 
-    def get_pystk_config(self) -> pystk.RaceConfig:
-        return self.get_race_config(
+    def build(self) -> pystk.RaceConfig:
+        return RaceConfig.get_race_config(
             self.track,
             self.kart,
             self.num_karts,
@@ -81,13 +83,12 @@ class RaceConfig:
         step_size: float = 0.045,
         num_karts_controlled: int = 4,
     ) -> pystk.RaceConfig:
+        track = np.random.choice(RaceConfig.TRACKS) if track is None else track
+        karts = np.random.choice(RaceConfig.KARTS) if karts is None else karts
+        reverse = np.random.choice([True, False]) if reverse is None else reverse
+        assert num_karts >= num_karts_controlled
 
-        track = choice(RaceConfig.TRACKS) if track is None else track
-        karts = choice(RaceConfig.KARTS) if karts is None else karts
-        reverse = choice([True, False]) if reverse is None else reverse
-        assert num_karts > num_karts_controlled
-
-        # add a matrix/grid check test to check all combinations of TRACKS and KARTS
+        # TODO: TESTS add a matrix/grid check test to check all combinations of TRACKS and KARTS
         # TODO: TESTS add tests to assert all tracks work
         # TODO: TESTS check if range of difficulty is 1-3
         # TODO: add fps kinda thing in hertz like highway_env - is this what step_size does?
@@ -100,12 +101,14 @@ class RaceConfig:
             assert karts in RaceConfig.KARTS, f"{karts} is not a valid kart."
             karts = [karts] * num_karts_controlled
         elif karts is None:
-            import random
-
-            karts = random.choices(np.array(RaceConfig.KARTS), k=num_karts_controlled)
+            karts = list(np.random.choice(RaceConfig.KARTS, size=num_karts_controlled))
+        else:
+            raise ValueError(f"does not support type {type(karts)} for list of karts.")
 
         assert track in RaceConfig.TRACKS, f"{track} is not a valid track."
-        assert 1 <= difficulty <= 3, f"{difficulty} should be between 1 and 3 (inclusive)"
+        assert (
+            1 <= difficulty <= 3
+        ), f"Difficulty({difficulty}) should be between 1 and 3 (inclusive)"
 
         config = pystk.RaceConfig()
         config.track = track
@@ -120,20 +123,23 @@ class RaceConfig:
         config.players[0].kart = karts[0]
         for kart in karts[1:]:
             config.players.append(
-                pystk.PlayerConfig(kart, pystk.PlayerConfig.Controller.PLAYER_CONTROL, 0)
+                # TODO: check constructor
+                pystk.PlayerConfig(
+                    kart, pystk.PlayerConfig.Controller.PLAYER_CONTROL, 0
+                )
             )
 
-        # self controlled karts
+        # game controlled karts
         for _ in range(num_karts - num_karts_controlled):
             config.players.append(
-                pystk.PlayerConfig('', pystk.PlayerConfig.Controller.AI_CONTROL, 1)
+                pystk.PlayerConfig("", pystk.PlayerConfig.Controller.AI_CONTROL, 1)
             )
 
         return config
 
 
 class Race:
-    def __init__(self, config: pystk.RaceConfig) -> None:
+    def __init__(self, config: pystk.RaceConfig):
         self.config = config
         self.done = False
         self.race = pystk.Race(self.config)
@@ -142,7 +148,11 @@ class Race:
         self.reverse = self.config.reverse
         self._init_vars()
 
-    def get_race_info(self) -> dict:
+    def _init_vars(self):
+        self._node_idx = 0
+        self.controlled_karts_idxs = None
+
+    def get_race_info(self) -> Dict:
         info = {}
         info["laps"] = self.config.laps
         info["track"] = self.config.track
@@ -171,18 +181,14 @@ class Race:
             else self.track.path_distance
         )
 
-    def get_all_karts(self) -> List:
-        return self.state.karts
-
-    def get_controlled_karts(self) -> List:
-        return list(np.array(self.get_all_karts())[self.get_controlled_kart_idxs()])
-
-    def get_controlled_kart_idxs(self) -> list:
+    def get_controlled_kart_mask(self) -> List[bool]:
         # there are better ways to do this but i think this is the best way to be sure that we are
         # getting the correct player karts
         if self.controlled_karts_idxs is None:
             self.controlled_karts_idxs = []
-            for i, (kart, player) in enumerate(zip(self.get_all_karts(), self.state.players)):
+            for i, (kart, player) in enumerate(
+                zip(self.get_all_karts(), self.state.players)
+            ):
                 assert kart.id == player.kart.id
                 self.controlled_karts_idxs.append(
                     self.config.players[i].controller
@@ -190,18 +196,39 @@ class Race:
                 )
         return self.controlled_karts_idxs
 
-    def get_nitro_locs(self) -> np.ndarray:
-        NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
-        return np.array([item.location for item in self.state.items if item in NITRO_TYPE])
+    def get_all_karts(self) -> List[pystk.Kart]:
+        return self.state.karts
 
-    # TODO: rename this method to "position" as in lead
-    def get_all_kart_positions(self) -> dict:
-        overall_dists = {kart.id: kart.overall_distance for kart in self.get_all_karts()}
+    def get_controlled_karts(self) -> List[pystk.Kart]:
+        return list(np.array(self.get_all_karts())[self.get_controlled_kart_mask()])
+
+    def get_nitro_locs(self) -> npt.NDArray[np.float64]:
+        NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
+        # TODO: print location and see info
+        return np.array(
+            [item.location for item in self.state.items if item in NITRO_TYPE]
+        )
+
+    def get_all_kart_positions(self) -> Dict[int, int]:
+        overall_dists = {
+            kart.id: kart.overall_distance for kart in self.get_all_karts()
+        }
         return {
-            id: i for i, (id, _) in enumerate(sorted(overall_dists.items(), key=lambda x: x[1]))
+            id: i
+            for i, (id, _) in enumerate(
+                sorted(overall_dists.items(), key=lambda x: x[1])
+            )
         }
 
-    def step(self, actions: Optional[Union[pystk.Action, Iterable[pystk.Action]]]) -> np.ndarray:
+    def observe(self) -> ObsType:
+        # TODO: is it okay to remove list here? can np directly operate on map?
+        return np.array(
+            list(map(lambda x: x.image, self.race.render_data)), dtype=np.uint8
+        )[self.get_controlled_kart_mask()]
+
+    def step(
+        self, actions: Optional[Union[pystk.Action, Iterable[pystk.Action]]]
+    ) -> ObsType:
         # TODO: TESTS: make sure that each action maps to the corresponding kart
         if actions is not None:
             self.race.step(actions)
@@ -212,15 +239,6 @@ class Race:
         self.track.update()
         return self.observe()
 
-    def observe(self) -> np.ndarray:
-        return np.array(list(map(lambda x: x.image, self.race.render_data)), dtype=np.uint8)[
-            self.get_controlled_kart_idxs()
-        ]
-
-    def _init_vars(self) -> None:
-        self._node_idx = 0
-        self.controlled_karts_idxs = None
-
     def reset(self) -> np.ndarray:
         self.done = False
         self._init_vars()
@@ -230,7 +248,6 @@ class Race:
         self.state.update()
         self.track.update()
 
-        # fails `check_env` test because of vectorization
         return self.observe()
 
     def close(self) -> None:

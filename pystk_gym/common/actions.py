@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Union, Dict
+from typing import Dict, Iterable, List, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -87,6 +87,6 @@ class MultiDiscreteAction:
             return actions
         raise NotImplementedError
 
-    def space(self) -> spaces.Space:
+    def space(self) -> spaces.MultiDiscrete:
         """The action space."""
         return self.action_space
