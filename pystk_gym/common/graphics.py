@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import os
 from enum import Enum
-from typing import Set
 
-import numpy as np
 import pygame
 import pystk
 
@@ -19,20 +17,12 @@ class GraphicQuality(Enum):
     LD = (3, pystk.GraphicsConfig.ld)
     NONE = (4, pystk.GraphicsConfig.none)
 
-    def __new__(cls, value, obj_ref):
-        obj = object.__new__(cls)
-        obj._value_ = value
-        obj._obj_ref = obj_ref
-        return obj
-
     def get_obj(self) -> pystk.GraphicsConfig:
-        return self._obj_ref()
+        return self.value[1]()
 
 
 class GraphicConfig:
-    def __init__(
-        self, width: int, height: int, graphic_quality: GraphicQuality
-    ) -> None:
+    def __init__(self, width: int, height: int, graphic_quality: GraphicQuality):
         """
         :param width: screen width
         :param height: screen height

@@ -9,14 +9,14 @@ from gymnasium import spaces
 
 ActionType = Union[
     pystk.Action,
-    List[int | float],
-    Dict[str, int | float],
-    npt.NDArray[np.float64 | np.int64],
+    List[Union[int, float]],
+    Dict[str, Union[int, float]],
+    npt.NDArray[Union[np.float64, np.int64]],
 ]
 
 
 def get_stk_action_obj(
-    action_names: Iterable[str], actions_values: Iterable[int | float]
+    action_names: Iterable[str], actions_values: Iterable[Union[int, float]]
 ) -> pystk.Action:
     """
     Returns a pystk.Action object after updating the keys with the corresponding values.
@@ -56,7 +56,7 @@ class MultiDiscreteAction:
 
     ACTIONS = ["acceleration", "brake", "steer", "fire", "drift", "nitro", "rescue"]
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.action_space = spaces.MultiDiscrete([2, 2, 3, 2, 2, 2, 2])
 
     def _get_actions_from_dict(self, actions: dict) -> pystk.Action:
@@ -68,7 +68,10 @@ class MultiDiscreteAction:
         return get_stk_action_obj(actions.keys(), actions.values())
 
     def _get_actions_from_list(
-        self, actions: Union[List[int | float], npt.NDArray[np.float64 | np.int64]]
+        self,
+        actions: Union[
+            List[Union[int, float]], npt.NDArray[Union[np.float64, np.int64]]
+        ],
     ) -> pystk.Action:
         """
         Process a list of action values and returns a pystk.Action object.
@@ -78,7 +81,7 @@ class MultiDiscreteAction:
         assert self.action_space.contains(actions)
         return get_stk_action_obj(MultiDiscreteAction.ACTIONS, actions)
 
-    def get_actions(self, actions: ActionType) -> pystk.Action:
+    def get_pystk_action(self, actions: ActionType) -> pystk.Action:
         if isinstance(actions, dict):
             return self._get_actions_from_dict(actions)
         if isinstance(actions, (list, np.ndarray)):

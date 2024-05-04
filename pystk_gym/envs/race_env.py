@@ -1,17 +1,19 @@
-from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Protocol
-
 import functools
-from pettingzoo import ParallelEnv
-import pystk
-import numpy as np
-from gymnasium import spaces
+from abc import abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple, TypeVar
+from copy import copy
 
-from ..common.graphics import EnvViewer, GraphicConfig
+import numpy as np
+import pystk
+from gymnasium import spaces
+from pettingzoo import ParallelEnv
+
 from ..common.actions import ActionType, MultiDiscreteAction
+from ..common.graphics import EnvViewer, GraphicConfig
 from ..common.kart import Kart
 from ..common.race import ObsType, Race, RaceConfig
 
+# https://github.com/python/typing/issues/59
 C = TypeVar("C", bound="Comparable")
 AgentID = TypeVar("AgentID", bound="Comparable")
 
@@ -57,6 +59,7 @@ class RaceEnv(ParallelEnv):
         )
         # action init
         self.action_class = MultiDiscreteAction()
+        self._make_karts()
 
         self.observation_spaces = {
             kart.id: spaces.Box(
@@ -69,6 +72,8 @@ class RaceEnv(ParallelEnv):
         self.action_spaces = {
             kart.id: self.action_class.space() for kart in self.get_controlled_karts()
         }
+        self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
+        self.agents = copy(self.possible_agents)
 
         self._node_idx = 0
         self.reverse = self.race.get_config().reverse
@@ -93,7 +98,7 @@ class RaceEnv(ParallelEnv):
         self, actions: Dict[AgentID, ActionType]
     ) -> Dict[AgentID, pystk.Action]:
         return {
-            agent_id: self.action_class.get_actions(action)
+            agent_id: self.action_class.get_pystk_action(action)
             for agent_id, action in actions.items()
         }
 
@@ -106,14 +111,16 @@ class RaceEnv(ParallelEnv):
         self, actions: Dict[AgentID, ActionType], infos: Dict[AgentID, dict]
     ) -> Dict[AgentID, float]:
         return {
-            agent_id: self.reward_func(actions[agent_id], infos[agent_id])
+            agent_id: self.reward_func(
+                self.action_class.get_pystk_action(actions[agent_id]), infos[agent_id]
+            )
             for agent_id in actions.keys()
         }
 
     def _terminal(self, infos: Dict[AgentID, dict]) -> Dict[AgentID, bool]:
         step_limit_reached = self.steps > self.max_step_cnt
         return {
-            agent_id: info["is_inside_track"]
+            agent_id: not info["is_inside_track"]
             or info["backward"]
             or info["no_movement"]
             or info["done"]
@@ -121,7 +128,7 @@ class RaceEnv(ParallelEnv):
             for agent_id, info in infos.items()
         }
 
-    def _make_karts(self) -> None:
+    def _make_karts(self):
         is_reverse, path_width, path_lines, path_distance = (
             self.race.get_race_info()["reverse"],
             self.race.get_path_width(),
@@ -161,11 +168,19 @@ class RaceEnv(ParallelEnv):
         # TODO: take multiple steps? if so, i have to render intermediate steps
         obs = {
             agent_id: obs
-            for agent_id, obs in zip(actions.keys(), self.race.step(actions.values()))
+            for agent_id, obs in zip(
+                actions.keys(), self.race.step(list(actions.values()))
+            )
         }
         infos = {kart.id: kart.step() for kart in self.get_controlled_karts()}
         rewards = self._get_reward(actions, infos)
         terminals = self._terminal(infos)
+        truncated = {kart.id: False for kart in self.get_controlled_karts()}
+        self.agents = [
+            kart.id
+            for kart in self.get_controlled_karts()
+            if not (terminals[kart.id] or truncated[kart.id])
+        ]
 
         # nitro_locs = self.race.get_nitro_locs()
         # all_kart_positions = self.race.get_all_kart_positions()
@@ -179,7 +194,7 @@ class RaceEnv(ParallelEnv):
 
         # FIXME: this is always true
         self.done = any(terminals)
-        return obs, rewards, terminals, {}, infos
+        return obs, rewards, terminals, truncated, infos
 
     def _reset(self):
         self._make_karts()
@@ -206,12 +221,12 @@ class RaceEnv(ParallelEnv):
             viewer.display(image)
         if mode == "rgb_array":
             return obs
+        # TODO: return
+        return obs
 
     def reset(
-        self, seed: int | None = None, options: dict | None = None
+        self, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[Dict[AgentID, np.ndarray], Dict[AgentID, dict]]:
-        super().reset(seed=seed, options=options)
-
         # BUG: using reset here would not restart the race
         self.done = False
         self._init_vars()
@@ -220,9 +235,14 @@ class RaceEnv(ParallelEnv):
         self._reset()
         for kart in self.get_controlled_karts():
             kart.reset()
-        return {}, {}
-        # TODO:
-        # return obs, {}
+        self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
+        self.agents = copy(self.possible_agents)
+        obs = {
+            kart.id: obs
+            for kart, obs in zip(self.get_controlled_karts(), self.race.observe())
+        }
+        info = {kart.id: {} for kart in self.get_controlled_karts()}
+        return obs, info
 
     def close(self):
         self.done = True

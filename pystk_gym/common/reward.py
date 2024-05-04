@@ -1,7 +1,9 @@
 from typing import Callable, List
 
+import pystk
 import numpy as np
-from actions import MultiDiscreteAction, get_stk_action_obj
+
+from .actions import MultiDiscreteAction, get_stk_action_obj
 
 
 def get_reward_fn() -> Callable:
@@ -18,19 +20,17 @@ def get_reward_fn() -> Callable:
 
     no_movement_threshold = 5
 
-    def reward_fn(action: List[int], info):
-        stk_action = get_stk_action_obj(MultiDiscreteAction.ACTIONS, action)
-
+    def reward_fn(action: pystk.Action, info):
         reward = -0.02
-        if stk_action.nitro and info["nitro"]:
-            reward += NITRO
+        # if action.nitro and info["nitro"]:
+        #     reward += NITRO
 
-        if stk_action.drift and info["velocity"] > 10:
+        if action.drift and info["velocity"] > 10:
             reward += DRIFT
-        elif stk_action.drift and info["velocity"] < 5:
+        elif action.drift and info["velocity"] < 5:
             reward -= DRIFT
 
-        if stk_action.fire and info["powerup"].value:
+        if action.fire and info["powerup"].value:
             reward += USE_POWERUP
 
         if info["done"]:

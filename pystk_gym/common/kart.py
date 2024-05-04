@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import numpy as np
 import pystk
 from sympy import Point3D
@@ -12,7 +14,7 @@ class Kart:
         path_width: np.ndarray,
         path_lines: np.ndarray,
         path_distance: np.ndarray,
-    ) -> None:
+    ):
         self.kart = kart
         self.id = self.kart.id
         self.kart_name = self.kart.name
@@ -29,9 +31,9 @@ class Kart:
         self.backward_count = 0
         self.no_movement_count = 0
         self.out_of_track_count = 0
-        self._prev_info = {}
+        self._prev_info = None
 
-    def _update_node_idx(self) -> None:
+    def _update_node_idx(self):
         dist_down_track = (
             0
             if self.is_reverse and self.kart.overall_distance <= 0
@@ -64,27 +66,28 @@ class Kart:
     def _get_location(self):
         return self.kart.location
 
+    # TODO: add return type
     def _get_kart_dist_from_center(self):
         # compute the dist b/w the kart and the center of the track
         location = self.kart.location
         path_node = self.path_lines[self._node_idx]
         return path_node.distance(Point3D(location)).evalf()
 
-    def _get_is_inside_track(self):
+    def _get_is_inside_track(self) -> bool:
         # TODO: is 1 a sensitive tolerance to add? or should i change the value?
         # TODO: add user defined tolerance
         curr_path_width = self.path_width[self._node_idx][0]
         kart_dist = self._get_kart_dist_from_center()
-        return kart_dist <= ((curr_path_width / 2) + 1)
+        return abs(kart_dist) <= ((curr_path_width / 2) + 1)
 
-    def _get_velocity(self):
+    def _get_velocity(self) -> float:
         # returns the magnitude of velocity
         return np.sqrt(np.sum(np.array(self.kart.velocity) ** 2))
 
     def is_done(self) -> bool:
         return self.kart.finish_time > 0
 
-    def get_info(self) -> dict:
+    def get_info(self) -> Dict[str, Any]:
         info = {}
 
         # basic info
@@ -105,19 +108,21 @@ class Kart:
         info["out_of_track_count"] = self.out_of_track_count
 
         # info based on _prev_info
-        if len(self._prev_info) == 0:
-            self._prev_info = info
-
-        # TODO: check if vals(backward and no_movement) are assigned correctly
-        delta_dist = info["overall_distance"] - self._prev_info["overall_distance"]
-        info["delta_dist"] = delta_dist
-        if delta_dist < 0:
-            info["backward"] = True
-            info["no_movement"] = False
-        elif delta_dist == 0:
-            info["backward"] = False
-            info["no_movement"] = True
+        if self._prev_info:
+            # TODO: check if vals(backward and no_movement) are assigned correctly
+            delta_dist = info["overall_distance"] - self._prev_info["overall_distance"]
+            info["delta_dist"] = delta_dist
+            if delta_dist < 0:
+                info["backward"] = True
+                info["no_movement"] = False
+            elif delta_dist == 0:
+                info["backward"] = False
+                info["no_movement"] = True
+            else:
+                info["backward"] = False
+                info["no_movement"] = False
         else:
+            info["delta_dist"] = 0
             info["backward"] = False
             info["no_movement"] = False
 

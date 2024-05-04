@@ -25,16 +25,16 @@ class RaceConfig:
 
     def __init__(
         self,
-        track: str | None = None,
-        kart: str | None = None,
+        track: Optional[str] = None,
+        kart: Optional[str] = None,
         num_karts: int = 5,
         laps: int = 1,
-        reverse: bool | None = None,
+        reverse: Optional[bool] = None,
         seed: int = 1337,
         difficulty: int = 1,
         step_size: float = 0.045,
         num_karts_controlled: int = 3,
-    ) -> None:
+    ):
         self.track = track
         self.kart = kart
         self.num_karts = num_karts
@@ -73,11 +73,11 @@ class RaceConfig:
 
     @staticmethod
     def get_race_config(
-        track: str | None = None,
-        karts: str | List[str] | None = None,
+        track: Optional[str] = None,
+        karts: Optional[Union[str, List[str]]] = None,
         num_karts: int = 5,
         laps: int = 1,
-        reverse: bool | None = None,
+        reverse: Optional[bool] = None,
         seed: int = 1337,
         difficulty: int = 1,
         step_size: float = 0.045,
@@ -147,6 +147,7 @@ class Race:
         self.state = pystk.WorldState()
         self.reverse = self.config.reverse
         self._init_vars()
+        self.reset()
 
     def _init_vars(self):
         self._node_idx = 0
@@ -250,6 +251,6 @@ class Race:
 
         return self.observe()
 
-    def close(self) -> None:
+    def close(self):
         self.race.stop()
         self.done = True
