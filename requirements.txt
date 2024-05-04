@@ -1,7 +1,0 @@
-numpy
-sympy
-PyQt5
-gymnasium
-matplotlib
-PySuperTuxKart
-pettingzoo[all]
