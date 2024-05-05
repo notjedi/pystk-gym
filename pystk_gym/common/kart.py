@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pystk
@@ -128,9 +128,6 @@ class Kart:
 
         return info
 
-    def get_prev_info(self) -> dict:
-        return self._prev_info
-
     def step(self) -> dict:
         self._update_node_idx()
         info = self.get_info()
@@ -144,7 +141,9 @@ class Kart:
         elif delta_dist == 0:
             self.no_movement_count += 1
 
-        if info["jumping"] and not self._prev_info["jumping"]:
+        if info["jumping"] and (
+            self._prev_info is not None and not self._prev_info["jumping"]
+        ):
             self.jump_count += 1
 
         self.prev_info = info

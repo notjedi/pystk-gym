@@ -1,6 +1,17 @@
 import functools
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    # Literal,
+    Optional,
+    # Protocol,
+    Tuple,
+    TypeVar,
+)
+from typing_extensions import Literal, Protocol
 from copy import copy
 
 import numpy as np
@@ -41,6 +52,7 @@ class RaceEnv(ParallelEnv):
         race_config: RaceConfig,
         reward_func: Callable,
         max_step_cnt: int = 1000,
+        render_mode: Literal["human", "rgb_array"] = "rgb_array",
     ):
         self.graphic_config = graphic_config
         self.reward_func = reward_func
@@ -60,6 +72,17 @@ class RaceEnv(ParallelEnv):
         # action init
         self.action_class = MultiDiscreteAction()
         self._make_karts()
+
+        self.viewers = []
+        if render_mode == "human":
+            self.viewers = [
+                EnvViewer(
+                    self.graphic_config,
+                    human_controlled=True,
+                    id=kart.id,
+                )
+                for kart in self.get_controlled_karts()
+            ]
 
         self.observation_spaces = {
             kart.id: spaces.Box(
@@ -205,41 +228,29 @@ class RaceEnv(ParallelEnv):
             for kart in self.get_controlled_karts()
         ]
 
-    def render(self, mode: str = "rgb_array") -> Optional[np.ndarray]:
-        if self.viewers is None:
-            self.viewers = [
-                EnvViewer(
-                    self.graphic_config,
-                    human_controlled=mode == "human",
-                    id=kart.id,
-                )
-                for kart in self.get_controlled_karts()
-            ]
-
+    def render(self, mode: str = "rgb_array") -> Optional[ObsType]:
         obs = self.race.observe()
         for image, viewer in zip(obs, self.viewers):
             viewer.display(image)
         if mode == "rgb_array":
             return obs
-        # TODO: return
         return obs
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
-    ) -> Tuple[Dict[AgentID, np.ndarray], Dict[AgentID, dict]]:
+    ) -> Tuple[Dict[AgentID, ObsType], Dict[AgentID, Dict[str, Any]]]:
         # BUG: using reset here would not restart the race
         self.done = False
         self._init_vars()
 
-        obs = self.race.reset()
+        reset_obs = self.race.reset()
         self._reset()
         for kart in self.get_controlled_karts():
             kart.reset()
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
         obs = {
-            kart.id: obs
-            for kart, obs in zip(self.get_controlled_karts(), self.race.observe())
+            kart.id: obs for kart, obs in zip(self.get_controlled_karts(), reset_obs)
         }
         info = {kart.id: {} for kart in self.get_controlled_karts()}
         return obs, info

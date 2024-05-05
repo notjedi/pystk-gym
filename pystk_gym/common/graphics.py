@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 from enum import Enum
 
@@ -32,19 +30,23 @@ class GraphicConfig:
         self.height = height
         self.graphic_quality = graphic_quality
 
-    def get_pystk_config(self) -> pystk.GraphicConfig:
+    # def get_pystk_config(self) -> pystk.GraphicConfig:
+    def get_pystk_config(self) -> "pystk.GraphicConfig":
         """Internal method to get a pystk.GraphicConfig object."""
         return self.get_graphic_config(self.width, self.height, self.graphic_quality)
 
     @staticmethod
-    def default_config() -> GraphicConfig:
+    def default_config() -> "GraphicConfig":
         """Default graphic config."""
         return GraphicConfig(600, 400, GraphicQuality.HD)
 
     @staticmethod
     def get_graphic_config(
-        width: int, height: int, graphic_quality: GraphicQuality
-    ) -> pystk.GraphicConfig:
+        width: int,
+        height: int,
+        graphic_quality: GraphicQuality,
+        # ) -> pystk.GraphicConfig:
+    ) -> "pystk.GraphicConfig":
         """Get pystk.GraphicConfig object using the parameters."""
         config = graphic_quality.get_obj()
         config.screen_width = width
@@ -63,14 +65,14 @@ class EnvViewer:
         pygame.init()
         pygame.display.set_caption("TuxKart")
 
-        self.screen = pygame.display.set_mode([self.screen_width, self.screen_height])
+        self.screen = pygame.display.set_mode(
+            (self.screen_width, self.screen_height), pygame.DOUBLEBUF | pygame.OPENGL
+        )
         self.clock = pygame.time.Clock()
         self.action = {}
 
-        if os.environ.get("SDL_VIDEODRIVER", None) == "dummy":
-            self.enabled = False
-
     def display(self, render_data):
+        print("type(render_data) = ", type(render_data))
         if self.human_controlled:
             self.handle_events()
         self.screen.blit(render_data, (0, self.screen_width))
