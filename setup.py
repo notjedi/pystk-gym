@@ -14,9 +14,13 @@ setuptools.setup(
     url="https://github.com/notjedi/pystk-gym",
     packages=setuptools.find_packages(),
     classifiers=[
+        "Intended Audience :: Education",
+        "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 3",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.9",
     install_requires=[
         "numpy",
         "sympy",
@@ -24,10 +28,8 @@ setuptools.setup(
         "pygame",
         "gymnasium",
         "matplotlib",
-        # "PySuperTuxKart",
         "pettingzoo",
+        "PySuperTuxKart",
     ],
-    extras_require={
-        "dev": ["mypy", "black", "isort", "flake8", "pytest", "pre-commit"]
-    },
+    extras_require={"dev": ["mypy", "black", "isort", "flake8"]},
 )
