@@ -52,13 +52,11 @@ class GraphicConfig:
         return config
 
 
-class EnvViewer:
-    def __init__(self, graphic_config, human_controlled=False, id=1):
+class PyGameWrapper:
+    def __init__(self, graphic_config):
         self.screen_width = graphic_config.width
         self.screen_height = graphic_config.height
-        self.human_controlled = human_controlled
         self.display_hertz = 60
-        self.id = id
 
         pygame.init()
         pygame.display.set_caption("TuxKart")
@@ -67,44 +65,57 @@ class EnvViewer:
             (self.screen_width, self.screen_height), pygame.DOUBLEBUF | pygame.OPENGL
         )
         self.clock = pygame.time.Clock()
-        self.action = {}
-
-    def display(self, render_data):
-        if self.human_controlled:
-            self.handle_events()
-        self.screen.blit(render_data, (0, self.screen_width))
-        self.clock.tick(self.display_hertz)
-        print(f"id:= {self.id}, FPS:= {self.clock.get_fps()}")
-
-    def get_action(self) -> pystk.Action:
-        return self.action
 
     def handle_events(self):
-        self.action = {}
+        events = {}
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.action["quit"] = True
+                events["quit"] = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP or event.key == pygame.K_w:
-                    self.action["up"] = True
+                    events["up"] = True
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.action["down"] = True
+                    events["down"] = True
                 elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    self.action["right"] = True
+                    events["right"] = True
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    self.action["left"] = True
+                    events["left"] = True
 
                 elif event.key == pygame.K_SPACE:
-                    self.action["fire"] = True
+                    events["fire"] = True
                 elif event.key == pygame.K_m:
-                    self.action["drift"] = True
+                    events["drift"] = True
                 elif event.key == pygame.K_n:
-                    self.action["nitro"] = True
+                    events["nitro"] = True
                 elif event.key == pygame.K_r:
-                    self.action["rescue"] = True
-        return self.action
+                    events["rescue"] = True
+        return events
+
+    def display(self, render_data):
+        events = self.handle_events()
+        self.screen.blit(render_data, (0, self.screen_width))
+        self.clock.tick(self.display_hertz)
+        # print(f"id:= {self.id}, FPS:= {self.clock.get_fps()}")
+        return events
 
     def close(self):
         if self.screen is not None:
             pygame.display.quit()
             pygame.quit()
+
+
+class EnvViewer:
+    def __init__(self, graphic_config, human_controlled=False, id=1):
+        self.pygame_wrapper = PyGameWrapper(graphic_config)
+        self.human_controlled = human_controlled
+        self.id = id
+
+    def display(self, render_data):
+        self.pygame_wrapper.display(render_data)
+        if self.human_controlled:
+            events = self.pygame_wrapper.handle_events()
+            return events
+        return None
+
+    def close(self):
+        self.pygame_wrapper.close()
