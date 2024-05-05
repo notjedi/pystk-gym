@@ -1,8 +1,8 @@
-from typing import Any, Dict, Iterable, List, Union
+from typing import Dict, Iterable, List, Union
 
 import numpy as np
 
-# import numpy.typing as npt
+import numpy.typing as npt
 import pystk
 from gymnasium import spaces
 
@@ -10,8 +10,7 @@ ActionType = Union[
     pystk.Action,
     List[Union[int, float]],
     Dict[str, Union[int, float]],
-    np.ndarray,
-    # npt.NDArray[Union[np.float64, np.int64]],
+    npt.NDArray[Union[np.float64, np.int64]],
 ]
 
 
@@ -70,9 +69,7 @@ class MultiDiscreteAction:
     def _get_actions_from_list(
         self,
         actions: Union[
-            # List[Union[int, float]], npt.NDArray[Union[np.float64, np.int64]]
-            List[Union[int, float]],
-            np.ndarray,
+            List[Union[int, float]], npt.NDArray[Union[np.float64, np.int64]]
         ],
     ) -> pystk.Action:
         """

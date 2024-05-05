@@ -5,13 +5,12 @@ from typing import (
     Callable,
     Dict,
     List,
-    # Literal,
+    Literal,
     Optional,
-    # Protocol,
+    Protocol,
     Tuple,
     TypeVar,
 )
-from typing_extensions import Literal, Protocol
 from copy import copy
 
 import numpy as np
@@ -126,7 +125,7 @@ class RaceEnv(ParallelEnv):
         }
 
     def _init_vars(self):
-        self.viewers = None
+        self.viewers = []
         self.done = False
         self.steps = 0
 
@@ -249,6 +248,17 @@ class RaceEnv(ParallelEnv):
             kart.reset()
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
+
+        if options and options.get("render_mode", "rgb_array") == "human":
+            self.viewers = [
+                EnvViewer(
+                    self.graphic_config,
+                    human_controlled=True,
+                    id=kart.id,
+                )
+                for kart in self.get_controlled_karts()
+            ]
+
         obs = {
             kart.id: obs for kart, obs in zip(self.get_controlled_karts(), reset_obs)
         }

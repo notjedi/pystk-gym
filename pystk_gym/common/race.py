@@ -1,13 +1,13 @@
+from __future__ import annotations
 from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
 
-# import numpy.typing as npt
+import numpy.typing as npt
 import pystk
 from sympy import Line3D
 
-# ObsType = np.ndarray[np.ndarray, np.dtype[np.uint8]]
-ObsType = np.ndarray
+ObsType = np.ndarray[np.ndarray, np.dtype[np.uint8]]
 
 
 class RaceConfig:
@@ -59,8 +59,7 @@ class RaceConfig:
         )
 
     @staticmethod
-    # def default_config() -> RaceConfig:
-    def default_config() -> "RaceConfig":
+    def default_config() -> RaceConfig:
         return RaceConfig(
             track="hacienda",
             kart="tux",
@@ -204,8 +203,7 @@ class Race:
     def get_controlled_karts(self) -> List[pystk.Kart]:
         return list(np.array(self.get_all_karts())[self.get_controlled_kart_mask()])
 
-    # def get_nitro_locs(self) -> npt.NDArray[np.float64]:
-    def get_nitro_locs(self) -> np.ndarray:
+    def get_nitro_locs(self) -> npt.NDArray[np.float64]:
         NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
         # TODO: print location and see info
         return np.array(
