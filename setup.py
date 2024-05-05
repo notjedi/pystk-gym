@@ -16,15 +16,16 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.6",
     install_requires=[
         "numpy",
         "sympy",
         "PyQt5",
+        "pygame",
         "gymnasium",
         "matplotlib",
-        "PySuperTuxKart",
-        "pettingzoo[all]",
+        # "PySuperTuxKart",
+        "pettingzoo",
     ],
     extras_require={
         "dev": ["mypy", "black", "isort", "flake8", "pytest", "pre-commit"]
