@@ -1,8 +1,9 @@
 from __future__ import annotations
+
+import functools
 from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
-
 import numpy.typing as npt
 import pystk
 from sympy import Line3D
@@ -142,7 +143,6 @@ class RaceConfig:
 class Race:
     def __init__(self, config: pystk.RaceConfig):
         self.config = config
-        self.done = False
         self.race = pystk.Race(self.config)
         self.track = pystk.Track()
         self.state = pystk.WorldState()
@@ -176,20 +176,20 @@ class Race:
             else self.track.path_distance
         )
 
+    @functools.lru_cache(maxsize=None)
     def get_controlled_kart_mask(self) -> List[bool]:
         # there are better ways to do this but i think this is the best way to be sure that we are
         # getting the correct player karts
-        if self.controlled_karts_idxs is None:
-            self.controlled_karts_idxs = []
-            for i, (kart, player) in enumerate(
-                zip(self.get_all_karts(), self.state.players)
-            ):
-                assert kart.id == player.kart.id
-                self.controlled_karts_idxs.append(
-                    self.config.players[i].controller
-                    == pystk.PlayerConfig.Controller.PLAYER_CONTROL
-                )
-        return self.controlled_karts_idxs
+        controlled_karts_idxs = []
+        for i, (kart, player) in enumerate(
+            zip(self.get_all_karts(), self.state.players)
+        ):
+            assert kart.id == player.kart.id
+            self.controlled_karts_idxs.append(
+                self.config.players[i].controller
+                == pystk.PlayerConfig.Controller.PLAYER_CONTROL
+            )
+        return controlled_karts_idxs
 
     def get_all_karts(self) -> List[pystk.Kart]:
         return self.state.karts
@@ -199,12 +199,11 @@ class Race:
 
     def get_nitro_locs(self) -> npt.NDArray[np.float64]:
         NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
-        # TODO: print location and see info
         return np.array(
             [item.location for item in self.state.items if item in NITRO_TYPE]
         )
 
-    def get_all_kart_positions(self) -> Dict[int, int]:
+    def get_all_kart_rankings(self) -> Dict[int, int]:
         overall_dists = {
             kart.id: kart.overall_distance for kart in self.get_all_karts()
         }
@@ -216,7 +215,6 @@ class Race:
         }
 
     def observe(self) -> ObsType:
-        # TODO: is it okay to remove list here? can np directly operate on map?
         return np.array(
             list(map(lambda x: x.image, self.race.render_data)), dtype=np.uint8
         )[self.get_controlled_kart_mask()]
@@ -235,12 +233,8 @@ class Race:
         return self.observe()
 
     def reset(self) -> ObsType:
-        self.done = False
-        self._node_idx = 0
-        self.controlled_karts_idxs = None
         return self.observe()
 
     def close(self):
         self.race.stop()
         del self.race
-        self.done = True

@@ -1,7 +1,6 @@
 from typing import Dict, Iterable, List, Union
 
 import numpy as np
-
 import numpy.typing as npt
 import pystk
 from gymnasium import spaces

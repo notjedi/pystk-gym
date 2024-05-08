@@ -21,16 +21,17 @@ class Kart:
         self.path_width = path_width
         self.path_lines = path_lines
         self.path_distance = path_distance
+        self._node_idx = 0
 
     def _init_vars(self):
-        self._node_idx = 0
         self.jump_count = 0
+        self._prev_info = None
         self.backward_count = 0
         self.no_movement_count = 0
         self.out_of_track_count = 0
-        self._prev_info = None
 
     def _update_node_idx(self):
+        # TODO: sanity check this logic when self.is_reverse == True
         dist_down_track = (
             0
             if self.is_reverse and self.kart.overall_distance <= 0

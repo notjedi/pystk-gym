@@ -1,5 +1,6 @@
 import functools
 from abc import abstractmethod
+from copy import copy
 from typing import (
     Any,
     Callable,
@@ -11,7 +12,6 @@ from typing import (
     Tuple,
     TypeVar,
 )
-from copy import copy
 
 import numpy as np
 import pystk

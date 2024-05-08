@@ -1,9 +1,7 @@
 from typing import Callable, List
 
-import pystk
 import numpy as np
-
-from .actions import MultiDiscreteAction, get_stk_action_obj
+import pystk
 
 
 def get_reward_fn() -> Callable:

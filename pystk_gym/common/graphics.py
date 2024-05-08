@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import threading
 import queue
+import threading
 from enum import Enum
 
 import pygame
