@@ -146,6 +146,11 @@ class Race:
         self.race = pystk.Race(self.config)
         self.track = pystk.Track()
         self.state = pystk.WorldState()
+
+        self.race.start()
+        self.race.step()
+        self.state.update()
+        self.track.update()
         self.reset()
 
     def get_race_info(self) -> Dict:
@@ -233,12 +238,6 @@ class Race:
         self.done = False
         self._node_idx = 0
         self.controlled_karts_idxs = None
-
-        self.race.start()
-        self.race.step()
-        self.state.update()
-        self.track.update()
-
         return self.observe()
 
     def close(self):
