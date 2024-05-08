@@ -56,7 +56,8 @@ class RaceEnv(ParallelEnv):
         self.graphic_config = graphic_config
         self.reward_func = reward_func
         self.max_step_cnt = max_step_cnt
-        self._init_vars()
+        self.done = False
+        self.steps = 0
 
         # graphics init
         self.graphics = graphic_config.get_pystk_config()
@@ -98,7 +99,7 @@ class RaceEnv(ParallelEnv):
         self.agents = copy(self.possible_agents)
 
         self._node_idx = 0
-        self.reverse = self.race.get_config().reverse
+        self.reverse = self.race.config.reverse
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent) -> spaces.Box:
@@ -123,10 +124,6 @@ class RaceEnv(ParallelEnv):
             agent_id: self.action_class.get_pystk_action(action)
             for agent_id, action in actions.items()
         }
-
-    def _init_vars(self):
-        self.done = False
-        self.steps = 0
 
     def _get_reward(
         self, actions: Dict[AgentID, ActionType], infos: Dict[AgentID, dict]
@@ -166,11 +163,6 @@ class RaceEnv(ParallelEnv):
             )
             for kart in self.race.get_controlled_karts()
         ]
-
-    def get_actions_from_env_viewer(self) -> Optional[List[pystk.Action]]:
-        if self.viewers is not None:
-            return [self._to_stk_action(viewer.get_action()) for viewer in self.viewers]
-        return None
 
     def step(
         self, actions: Dict[AgentID, ActionType]
@@ -217,9 +209,6 @@ class RaceEnv(ParallelEnv):
         self.done = any(terminals)
         return obs, rewards, terminals, truncated, infos
 
-    def _reset(self):
-        self._make_karts()
-
     def is_done(self) -> List[bool]:
         return [
             self.steps > self.max_step_cnt or kart.is_done()
@@ -239,10 +228,10 @@ class RaceEnv(ParallelEnv):
     ) -> Tuple[Dict[AgentID, ObsType], Dict[AgentID, Dict[str, Any]]]:
         # BUG: using reset here would not restart the race
         self.done = False
-        self._init_vars()
+        self.steps = 0
 
         reset_obs = self.race.reset()
-        self._reset()
+        self._make_karts()
         for kart in self.get_controlled_karts():
             kart.reset()
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]

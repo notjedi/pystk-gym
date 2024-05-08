@@ -121,6 +121,7 @@ class RaceConfig:
 
         config.players[0].team = 0
         config.players[0].kart = karts[0]
+        config.players[0].controller = pystk.PlayerConfig.Controller.PLAYER_CONTROL
         for kart in karts[1:]:
             config.players.append(
                 # TODO: check constructor
@@ -145,13 +146,7 @@ class Race:
         self.race = pystk.Race(self.config)
         self.track = pystk.Track()
         self.state = pystk.WorldState()
-        self.reverse = self.config.reverse
-        self._init_vars()
         self.reset()
-
-    def _init_vars(self):
-        self._node_idx = 0
-        self.controlled_karts_idxs = None
 
     def get_race_info(self) -> Dict:
         info = {}
@@ -163,12 +158,6 @@ class Race:
         info["difficulty"] = self.config.difficulty
         return info
 
-    def get_config(self) -> pystk.RaceConfig:
-        return self.config
-
-    def get_state(self) -> pystk.WorldState:
-        return self.state
-
     def get_path_lines(self) -> np.ndarray:
         return np.array([Line3D(*node) for node in self.track.path_nodes])
 
@@ -178,7 +167,7 @@ class Race:
     def get_path_distance(self) -> np.ndarray:
         return np.array(
             sorted(self.track.path_distance[::-1], key=lambda x: x[0])
-            if self.reverse
+            if self.config.reverse
             else self.track.path_distance
         )
 
@@ -242,7 +231,8 @@ class Race:
 
     def reset(self) -> ObsType:
         self.done = False
-        self._init_vars()
+        self._node_idx = 0
+        self.controlled_karts_idxs = None
 
         self.race.start()
         self.race.step()

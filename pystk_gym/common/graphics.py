@@ -65,7 +65,7 @@ class PyGameWrapper:
         pygame.display.set_caption("TuxKart")
 
         self.screen = pygame.display.set_mode(
-            (self.screen_width, self.screen_height), pygame.DOUBLEBUF | pygame.OPENGL
+            (self.screen_width, self.screen_height), pygame.DOUBLEBUF
         )
         self.clock = pygame.time.Clock()
 
@@ -95,8 +95,10 @@ class PyGameWrapper:
         return events
 
     def display(self, render_data):
+        print(type(render_data))
         events = self.handle_events()
-        self.screen.blit(render_data, (0, self.screen_width))
+        pygame.surfarray.blit_array(self.screen, render_data.swapaxes(0, 1))
+        pygame.display.flip()
         self.clock.tick(self.display_hertz)
         # print(f"id:= {self.id}, FPS:= {self.clock.get_fps()}")
         return events
