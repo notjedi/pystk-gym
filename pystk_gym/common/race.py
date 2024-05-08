@@ -91,7 +91,6 @@ class RaceConfig:
 
         # TODO: TESTS add a matrix/grid check test to check all combinations of TRACKS and KARTS
         # TODO: TESTS add tests to assert all tracks work
-        # TODO: TESTS check if range of difficulty is 1-3
         # TODO: add fps kinda thing in hertz like highway_env - is this what step_size does?
         if isinstance(karts, list):
             assert set(karts).issubset(
@@ -125,7 +124,6 @@ class RaceConfig:
         config.players[0].controller = pystk.PlayerConfig.Controller.PLAYER_CONTROL
         for kart in karts[1:]:
             config.players.append(
-                # TODO: check constructor
                 pystk.PlayerConfig(
                     kart, pystk.PlayerConfig.Controller.PLAYER_CONTROL, 0
                 )
@@ -222,7 +220,6 @@ class Race:
     def step(
         self, actions: Optional[Union[pystk.Action, Iterable[pystk.Action]]]
     ) -> ObsType:
-        # TODO: TESTS: make sure that each action maps to the corresponding kart
         if actions is not None:
             self.race.step(actions)
         else:

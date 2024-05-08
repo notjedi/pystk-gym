@@ -148,9 +148,7 @@ class RaceEnv(ParallelEnv):
     def action_space(self, agent) -> spaces.MultiDiscrete:
         return self.action_class.space()
 
-    def step(
-        self, actions: Dict[AgentID, ActionType]
-    ) -> Tuple[
+    def step(self, actions: Dict[AgentID, ActionType]) -> Tuple[
         Dict[AgentID, ObsType],  # observation dictionary
         Dict[AgentID, float],  # reward dictionary
         Dict[AgentID, bool],  # terminated dictionary
@@ -158,11 +156,10 @@ class RaceEnv(ParallelEnv):
         Dict[AgentID, dict],  # info dictionary
     ]:
         self.steps += 1
+        # TODO: take multiple steps? if so, i have to render intermediate steps
         actions = self._to_stk_action(actions)
         actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
 
-        # TODO: should i assert len(actions) == num_controlled_karts
-        # TODO: take multiple steps? if so, i have to render intermediate steps
         obs = {
             agent_id: obs
             for agent_id, obs in zip(
