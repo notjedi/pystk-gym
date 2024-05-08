@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import threading
+import queue
 from enum import Enum
 
 import pygame
@@ -104,18 +107,44 @@ class PyGameWrapper:
             pygame.quit()
 
 
+def worker_thread(graphic_config, input_queue, output_queue, terminate_event):
+    pygame_wrapper = PyGameWrapper(graphic_config)
+    while not terminate_event.is_set():
+        try:
+            render_data = input_queue.get(timeout=1)
+            events = pygame_wrapper.display(render_data)
+            output_queue.put(events)
+        except queue.Empty:
+            pass
+    pygame_wrapper.close()
+
+
 class EnvViewer:
     def __init__(self, graphic_config, human_controlled=False, id=1):
-        self.pygame_wrapper = PyGameWrapper(graphic_config)
         self.human_controlled = human_controlled
+        self.input_queue = queue.Queue()
+        self.output_queue = queue.Queue()
+        self.terminate_event = threading.Event()
         self.id = id
 
+        self.worker_thread = threading.Thread(
+            target=worker_thread,
+            args=(
+                graphic_config,
+                self.input_queue,
+                self.output_queue,
+                self.terminate_event,
+            ),
+        )
+        self.worker_thread.start()
+
     def display(self, render_data):
-        self.pygame_wrapper.display(render_data)
+        self.input_queue.put(render_data)
+        events = self.output_queue.get()
         if self.human_controlled:
-            events = self.pygame_wrapper.handle_events()
             return events
         return None
 
     def close(self):
-        self.pygame_wrapper.close()
+        self.terminate_event.set()
+        self.worker_thread.join()

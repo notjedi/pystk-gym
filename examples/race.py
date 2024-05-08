@@ -1,7 +1,7 @@
 from pettingzoo.test import parallel_api_test
 
 from pystk_gym import RaceEnv
-from pystk_gym.common.graphics import EnvViewer, GraphicConfig, GraphicQuality
+from pystk_gym.common.graphics import GraphicConfig, GraphicQuality
 from pystk_gym.common.race import RaceConfig
 from pystk_gym.common.reward import get_reward_fn
 
@@ -14,3 +14,4 @@ if __name__ == "__main__":
         render_mode="human",
     )
     parallel_api_test(env, 1000)
+    env.close()

@@ -125,7 +125,6 @@ class RaceEnv(ParallelEnv):
         }
 
     def _init_vars(self):
-        self.viewers = []
         self.done = False
         self.steps = 0
 
@@ -249,7 +248,15 @@ class RaceEnv(ParallelEnv):
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
 
-        if options and options.get("render_mode", "rgb_array") == "human":
+        is_viewers_none = self.viewers is None
+        if self.viewers is not None:
+            for viewer in self.viewers:
+                viewer.close()
+        self.viewers = []
+
+        if (
+            options and options.get("render_mode", "rgb_array") == "human"
+        ) or not is_viewers_none:
             self.viewers = [
                 EnvViewer(
                     self.graphic_config,
@@ -271,4 +278,5 @@ class RaceEnv(ParallelEnv):
         if self.viewers is not None:
             for viewer in self.viewers:
                 viewer.close()
+        self.viewers = []
         pystk.clean()

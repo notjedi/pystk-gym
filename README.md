@@ -20,6 +20,12 @@ One idea i have now is to:
 TODO:
 
 * should i add enum type for all the infos?
+* pystk init -> pygame init -> pygame cleanup -> pystk cleanup
+* figure out why 2 gl context can't be in the same thread
+
+
+* limit number of viewers to one when render_mode == "human"
+* create a new wrapper for the pygame logic
 
 
 BIG TODO:

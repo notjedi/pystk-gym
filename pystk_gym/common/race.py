@@ -253,4 +253,5 @@ class Race:
 
     def close(self):
         self.race.stop()
+        del self.race
         self.done = True
