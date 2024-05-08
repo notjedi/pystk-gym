@@ -16,10 +16,7 @@ class Kart:
         path_distance: np.ndarray,
     ):
         self.kart = kart
-        self.id = self.kart.id
-        self.kart_name = self.kart.name
-        self.player_id = self.kart.player_id
-
+        self.id = kart.id
         self.is_reverse = is_reverse
         self.path_width = path_width
         self.path_lines = path_lines

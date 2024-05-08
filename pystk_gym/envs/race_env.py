@@ -39,7 +39,6 @@ class Comparable(Protocol):
 
 
 class RaceEnv(ParallelEnv):
-    # TODO: TESTS check env or add tests with `from stable_baselines3.common.env_checker`
     # TODO: add seed method
     metadata = {
         "render.modes": ["human", "rgb_array"],
@@ -53,69 +52,50 @@ class RaceEnv(ParallelEnv):
         max_step_cnt: int = 1000,
         render_mode: Literal["human", "rgb_array"] = "rgb_array",
     ):
+        self.action_class = MultiDiscreteAction()
         self.graphic_config = graphic_config
-        self.reward_func = reward_func
         self.max_step_cnt = max_step_cnt
-        self.done = False
+        self.reward_func = reward_func
         self.steps = 0
 
-        # graphics init
         self.graphics = graphic_config.get_pystk_config()
         pystk.init(self.graphics)
-        # race init
         self.race = Race(race_config.build())
         self.observation_shape = (
             self.graphics.screen_height,
             self.graphics.screen_width,
             3,
         )
-        # action init
-        self.action_class = MultiDiscreteAction()
         self._make_karts()
 
-        self.viewers = []
+        self.env_viewer: Optional[EnvViewer] = None
+        # TODO: add actual support for human and also support just viewing the bot playing
         if render_mode == "human":
-            self.viewers = [
-                EnvViewer(
-                    self.graphic_config,
-                    human_controlled=True,
-                    id=kart.id,
-                )
-                for kart in self.get_controlled_karts()
-            ]
-
-        self.observation_spaces = {
-            kart.id: spaces.Box(
-                low=np.zeros(self.observation_shape, dtype=np.uint8),
-                high=np.full(self.observation_shape, 255, dtype=np.uint8),
-                dtype=np.uint8,
+            assert race_config.num_karts_controlled == 1 or (
+                race_config.num_karts_controlled == 0 and race_config.num_karts > 0
             )
-            for kart in self.get_controlled_karts()
-        }
-        self.action_spaces = {
-            kart.id: self.action_class.space() for kart in self.get_controlled_karts()
-        }
+            self.env_viewer = EnvViewer(self.graphic_config, human_controlled=True)
+
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
 
-        self._node_idx = 0
-        self.reverse = self.race.config.reverse
-
-    @functools.lru_cache(maxsize=None)
-    def observation_space(self, agent) -> spaces.Box:
-        return spaces.Box(
-            low=np.zeros(self.observation_shape, dtype=np.uint8),
-            high=np.full(self.observation_shape, 255, dtype=np.uint8),
-            dtype=np.uint8,
+    def _make_karts(self):
+        is_reverse, path_width, path_lines, path_distance = (
+            self.race.get_race_info()["reverse"],
+            self.race.get_path_width(),
+            self.race.get_path_lines(),
+            self.race.get_path_distance(),
         )
-
-    @functools.lru_cache(maxsize=None)
-    def action_space(self, agent) -> spaces.MultiDiscrete:
-        return self.action_class.space()
-
-    @functools.lru_cache(maxsize=None)
-    def get_controlled_karts(self) -> List[Kart]:
-        return self.controlled_karts
+        self.controlled_karts = [
+            Kart(
+                kart,
+                is_reverse,
+                path_width,
+                path_lines,
+                path_distance,
+            )
+            for kart in self.race.get_controlled_karts()
+        ]
 
     def _to_stk_action(
         self, actions: Dict[AgentID, ActionType]
@@ -146,23 +126,27 @@ class RaceEnv(ParallelEnv):
             for agent_id, info in infos.items()
         }
 
-    def _make_karts(self):
-        is_reverse, path_width, path_lines, path_distance = (
-            self.race.get_race_info()["reverse"],
-            self.race.get_path_width(),
-            self.race.get_path_lines(),
-            self.race.get_path_distance(),
-        )
-        self.controlled_karts = [
-            Kart(
-                kart,
-                is_reverse,
-                path_width,
-                path_lines,
-                path_distance,
-            )
-            for kart in self.race.get_controlled_karts()
+    @functools.lru_cache(maxsize=None)
+    def get_controlled_karts(self) -> List[Kart]:
+        return self.controlled_karts
+
+    def is_done(self) -> List[bool]:
+        return [
+            self.steps > self.max_step_cnt or kart.is_done()
+            for kart in self.get_controlled_karts()
         ]
+
+    @functools.lru_cache(maxsize=None)
+    def observation_space(self, agent) -> spaces.Box:
+        return spaces.Box(
+            low=np.zeros(self.observation_shape, dtype=np.uint8),
+            high=np.full(self.observation_shape, 255, dtype=np.uint8),
+            dtype=np.uint8,
+        )
+
+    @functools.lru_cache(maxsize=None)
+    def action_space(self, agent) -> spaces.MultiDiscrete:
+        return self.action_class.space()
 
     def step(
         self, actions: Dict[AgentID, ActionType]
@@ -176,8 +160,8 @@ class RaceEnv(ParallelEnv):
         self.steps += 1
         actions = self._to_stk_action(actions)
         actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
-        # TODO: should i assert len(actions) == num_controlled_karts
 
+        # TODO: should i assert len(actions) == num_controlled_karts
         # TODO: take multiple steps? if so, i have to render intermediate steps
         obs = {
             agent_id: obs
@@ -204,57 +188,27 @@ class RaceEnv(ParallelEnv):
         #     info["nitro"] = any(
         #         np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs
         #     )
-
-        # FIXME: this is always true
-        self.done = any(terminals)
         return obs, rewards, terminals, truncated, infos
 
-    def is_done(self) -> List[bool]:
-        return [
-            self.steps > self.max_step_cnt or kart.is_done()
-            for kart in self.get_controlled_karts()
-        ]
-
-    def render(self, mode: str = "rgb_array") -> Optional[ObsType]:
+    def render(
+        self, mode: Literal["rgb_array", "human"] = "rgb_array"
+    ) -> Optional[ObsType]:
         obs = self.race.observe()
-        for image, viewer in zip(obs, self.viewers):
-            viewer.display(image)
         if mode == "rgb_array":
             return obs
-        return obs
+        else:
+            self.env_viewer.display(obs[0])
+            return None
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[Dict[AgentID, ObsType], Dict[AgentID, Dict[str, Any]]]:
         # BUG: using reset here would not restart the race
-        self.done = False
         self.steps = 0
 
         reset_obs = self.race.reset()
-        self._make_karts()
         for kart in self.get_controlled_karts():
             kart.reset()
-        self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
-        self.agents = copy(self.possible_agents)
-
-        is_viewers_none = self.viewers is None
-        if self.viewers is not None:
-            for viewer in self.viewers:
-                viewer.close()
-        self.viewers = []
-
-        if (
-            options and options.get("render_mode", "rgb_array") == "human"
-        ) or not is_viewers_none:
-            self.viewers = [
-                EnvViewer(
-                    self.graphic_config,
-                    human_controlled=True,
-                    id=kart.id,
-                )
-                for kart in self.get_controlled_karts()
-            ]
-
         obs = {
             kart.id: obs for kart, obs in zip(self.get_controlled_karts(), reset_obs)
         }
@@ -262,10 +216,7 @@ class RaceEnv(ParallelEnv):
         return obs, info
 
     def close(self):
-        self.done = True
         self.race.close()
-        if self.viewers is not None:
-            for viewer in self.viewers:
-                viewer.close()
-        self.viewers = []
+        if self.env_viewer is not None:
+            self.env_viewer.close()
         pystk.clean()

@@ -95,7 +95,6 @@ class PyGameWrapper:
         return events
 
     def display(self, render_data):
-        print(type(render_data))
         events = self.handle_events()
         pygame.surfarray.blit_array(self.screen, render_data.swapaxes(0, 1))
         pygame.display.flip()
@@ -122,12 +121,11 @@ def worker_thread(graphic_config, input_queue, output_queue, terminate_event):
 
 
 class EnvViewer:
-    def __init__(self, graphic_config, human_controlled=False, id=1):
+    def __init__(self, graphic_config, human_controlled=False):
         self.human_controlled = human_controlled
         self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
         self.terminate_event = threading.Event()
-        self.id = id
 
         self.worker_thread = threading.Thread(
             target=worker_thread,
