@@ -183,7 +183,7 @@ class Race:
             zip(self.get_all_karts(), self.state.players)
         ):
             assert kart.id == player.kart.id
-            self.controlled_karts_idxs.append(
+            controlled_karts_idxs.append(
                 self.config.players[i].controller
                 == pystk.PlayerConfig.Controller.PLAYER_CONTROL
             )
