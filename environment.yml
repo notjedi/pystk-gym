@@ -1,62 +1,57 @@
 name: pettingzoo
 channels:
-  - conda-forge
   - defaults
 dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=5.1=1_gnu
   - ca-certificates=2024.3.11=h06a4308_0
-  - certifi=2021.5.30=py36h06a4308_0
   - ld_impl_linux-64=2.38=h1181459_1
-  - libffi=3.2.1=3
+  - libffi=3.4.4=h6a678d5_1
+  - libgcc-ng=11.2.0=h1234567_1
+  - libgomp=11.2.0=h1234567_1
   - libstdcxx-ng=11.2.0=h1234567_1
-  - libxcb=1.13=0
-  - ncurses=5.9=10
-  - openssl=1.0.2o=0
-  - pip=21.2.2=py36h06a4308_0
-  - pthread-stubs=0.4=0
-  - python=3.6.5=1
-  - readline=7.0=0
-  - setuptools=58.0.4=py36h06a4308_0
-  - sqlite=3.20.1=2
-  - tk=8.6.8=0
+  - ncurses=6.4=h6a678d5_0
+  - openssl=3.0.13=h7f8727e_1
+  - pip=23.3.1=py39h06a4308_0
+  - python=3.9.19=h955ad1f_0
+  - readline=8.2=h5eee18b_0
+  - setuptools=68.2.2=py39h06a4308_0
+  - sqlite=3.45.3=h5eee18b_0
+  - tk=8.6.12=h1ccaba5_0
   - tzdata=2024a=h04d1e81_0
-  - wheel=0.37.1=pyhd3eb1b0_0
-  - xorg-kbproto=1.0.7=1
-  - xorg-libx11=1.6.5=0
-  - xorg-libxau=1.0.8=3
-  - xorg-libxdmcp=1.1.2=3
-  - xorg-xextproto=7.3.0=1
-  - xorg-xproto=7.0.31=6
-  - xz=5.2.3=0
-  - zlib=1.2.11=0
+  - wheel=0.43.0=py39h06a4308_0
+  - xz=5.4.6=h5eee18b_1
+  - zlib=1.2.13=h5eee18b_1
   - pip:
-      - charset-normalizer==2.0.12
-      - cloudpickle==2.2.1
-      - cycler==0.11.0
-      - dataclasses==0.8
-      - gym==0.26.2
-      - gym-notices==0.0.8
-      - gymnasium==0.26.3
-      - gymnasium-notices==0.0.1
+      - certifi==2024.2.2
+      - charset-normalizer==3.3.2
+      - cloudpickle==3.0.0
+      - contourpy==1.2.1
+      - cycler==0.12.1
+      - farama-notifications==0.0.4
+      - fonttools==4.51.0
+      - gymnasium==0.29.1
       - idna==3.7
-      - importlib-metadata==4.8.3
-      - kiwisolver==1.3.1
-      - matplotlib==3.3.4
+      - importlib-metadata==7.1.0
+      - importlib-resources==6.4.0
+      - kiwisolver==1.4.5
+      - matplotlib==3.8.4
       - mpmath==1.3.0
-      - numpy==1.19.5
-      - pettingzoo==1.12.0
-      - pillow==8.4.0
+      - numpy==1.26.4
+      - packaging==24.0
+      - pettingzoo==1.24.3
+      - pillow==10.3.0
       - pygame==2.5.2
-      - pyparsing==3.0.7
-      - pyqt5==5.15.6
+      - pyparsing==3.1.2
+      - pyqt5==5.15.10
       - pyqt5-qt5==5.15.2
-      - pyqt5-sip==12.9.1
+      - pyqt5-sip==12.13.0
       - pysupertuxkart==1.1.2
       - pysupertuxkartdata==1.0.0
       - python-dateutil==2.9.0.post0
-      - requests==2.27.1
+      - requests==2.31.0
       - six==1.16.0
-      - sympy==1.9
-      - typing-extensions==4.1.1
-      - urllib3==1.26.18
-      - zipp==3.6.0
-prefix: /home/jedi/.conda/envs/pettingzoo
+      - sympy==1.12
+      - typing-extensions==4.11.0
+      - urllib3==2.2.1
+      - zipp==3.18.1
