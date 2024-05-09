@@ -59,6 +59,7 @@ class PyGameWrapper:
     def __init__(self, graphic_config):
         self.screen_width = graphic_config.width
         self.screen_height = graphic_config.height
+        self.current_action = pystk.Action()
         self.display_hertz = 60
 
         pygame.init()
@@ -70,37 +71,54 @@ class PyGameWrapper:
         self.clock = pygame.time.Clock()
 
     def handle_events(self):
-        events = {}
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                events["quit"] = True
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP or event.key == pygame.K_w:
-                    events["up"] = True
-                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    events["down"] = True
-                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    events["right"] = True
-                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    events["left"] = True
+            if event.type == pygame.QUIT or (
+                event.type == pygame.KEYDOWN and event.key == pygame.K_q
+            ):
+                self.close()
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    self.current_action.acceleration = 1.0
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    self.current_action.brake = 1.0
+                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    self.current_action.steer = 1.0
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    self.current_action.steer = -1.0
                 elif event.key == pygame.K_SPACE:
-                    events["fire"] = True
+                    self.current_action.fire = 1.0
                 elif event.key == pygame.K_m:
-                    events["drift"] = True
+                    self.current_action.drift = 1.0
                 elif event.key == pygame.K_n:
-                    events["nitro"] = True
+                    self.current_action.nitro = 1.0
                 elif event.key == pygame.K_r:
-                    events["rescue"] = True
-        return events
+                    self.current_action.rescue = 1.0
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    self.current_action.acceleration = 0.0
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    self.current_action.brake = 0.0
+                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    self.current_action.steer = 0.0
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    self.current_action.steer = 0.0
+                elif event.key == pygame.K_SPACE:
+                    self.current_action.fire = 0.0
+                elif event.key == pygame.K_m:
+                    self.current_action.drift = 0.0
+                elif event.key == pygame.K_n:
+                    self.current_action.nitro = 0.0
+                elif event.key == pygame.K_r:
+                    self.current_action.rescue = 0.0
 
     def display(self, render_data):
-        events = self.handle_events()
+        self.handle_events()
         pygame.surfarray.blit_array(self.screen, render_data.swapaxes(0, 1))
         pygame.display.flip()
         self.clock.tick(self.display_hertz)
         # print(f"id:= {self.id}, FPS:= {self.clock.get_fps()}")
-        return events
+        return self.current_action
 
     def close(self):
         if self.screen is not None:
@@ -113,8 +131,8 @@ def worker_thread(graphic_config, input_queue, output_queue, terminate_event):
     while not terminate_event.is_set():
         try:
             render_data = input_queue.get(timeout=1)
-            events = pygame_wrapper.display(render_data)
-            output_queue.put(events)
+            current_action = pygame_wrapper.display(render_data)
+            output_queue.put(current_action)
         except queue.Empty:
             pass
     pygame_wrapper.close()
@@ -125,6 +143,7 @@ class EnvViewer:
         self.human_controlled = human_controlled
         self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
+        self.current_action = pystk.Action()
         self.terminate_event = threading.Event()
 
         self.worker_thread = threading.Thread(
@@ -140,10 +159,13 @@ class EnvViewer:
 
     def display(self, render_data):
         self.input_queue.put(render_data)
-        events = self.output_queue.get()
+        self.current_action = self.output_queue.get()
         if self.human_controlled:
-            return events
+            return self.current_action
         return None
+
+    def get_current_action(self):
+        return self.current_action
 
     def close(self):
         self.terminate_event.set()

@@ -39,7 +39,6 @@ class Comparable(Protocol):
 
 
 class RaceEnv(ParallelEnv):
-    # TODO: add seed method
     metadata = {
         "render.modes": ["human", "rgb_array"],
     }
@@ -157,8 +156,13 @@ class RaceEnv(ParallelEnv):
     ]:
         self.steps += 1
         # TODO: take multiple steps? if so, i have to render intermediate steps
-        actions = self._to_stk_action(actions)
-        actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
+        if self.env_viewer is None:
+            actions = self._to_stk_action(actions)
+            actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
+        else:
+            actions = {
+                self.get_controlled_karts()[0].id: self.env_viewer.get_current_action()
+            }
 
         obs = {
             agent_id: obs
