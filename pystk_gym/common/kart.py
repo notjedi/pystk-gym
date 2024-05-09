@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import pystk
@@ -47,10 +47,10 @@ class Kart:
     def _get_jumping(self) -> bool:
         return self.kart.jumping
 
-    def _get_powerup(self):
+    def _get_powerup(self) -> pystk.Powerup.Type:
         return self.kart.powerup.type
 
-    def _get_attachment(self):
+    def _get_attachment(self) -> pystk.Attachment.Type:
         return self.kart.attachment.type
 
     def _get_finish_time(self) -> int:
@@ -59,16 +59,15 @@ class Kart:
     def _get_overall_distance(self) -> int:
         return max(0, self.kart.overall_distance)
 
-    # TODO: add return type
-    def _get_location(self):
+    def _get_location(self) -> List[int]:
         return self.kart.location
 
     # TODO: add return type
-    def _get_kart_dist_from_center(self):
+    def _get_kart_dist_from_center(self) -> float:
         # compute the dist b/w the kart and the center of the track
         location = self.kart.location
         path_node = self.path_lines[self._node_idx]
-        return path_node.distance(Point3D(location)).evalf()
+        return float(path_node.distance(Point3D(location)).evalf())
 
     def _get_is_inside_track(self) -> bool:
         # TODO: is 1 a sensitive tolerance to add? or should i change the value?

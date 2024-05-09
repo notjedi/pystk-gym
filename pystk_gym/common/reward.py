@@ -18,7 +18,7 @@ def get_reward_fn() -> Callable:
 
     no_movement_threshold = 5
 
-    def reward_fn(action: pystk.Action, info):
+    def reward_fn(action: pystk.Action, info) -> float:
         reward = -0.02
         # if action.nitro and info["nitro"]:
         #     reward += NITRO

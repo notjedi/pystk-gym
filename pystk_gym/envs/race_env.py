@@ -161,7 +161,7 @@ class RaceEnv(ParallelEnv):
             actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
         else:
             actions = {
-                self.get_controlled_karts()[0].id: self.env_viewer.get_current_action()
+                self.get_controlled_karts()[0].id: self.env_viewer.current_action
             }
 
         obs = {

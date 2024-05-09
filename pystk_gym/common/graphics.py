@@ -3,6 +3,7 @@ from __future__ import annotations
 import queue
 import threading
 from enum import Enum
+from typing import Optional
 
 import pygame
 import pystk
@@ -71,6 +72,7 @@ class PyGameWrapper:
         self.clock = pygame.time.Clock()
 
     def handle_events(self):
+        # TODO: stop preemptively if not human_controlled
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (
                 event.type == pygame.KEYDOWN and event.key == pygame.K_q
@@ -112,7 +114,7 @@ class PyGameWrapper:
                 elif event.key == pygame.K_r:
                     self.current_action.rescue = 0.0
 
-    def display(self, render_data):
+    def display(self, render_data) -> pystk.Action:
         self.handle_events()
         pygame.surfarray.blit_array(self.screen, render_data.swapaxes(0, 1))
         pygame.display.flip()
@@ -157,15 +159,12 @@ class EnvViewer:
         )
         self.worker_thread.start()
 
-    def display(self, render_data):
+    def display(self, render_data) -> Optional[pystk.Action]:
         self.input_queue.put(render_data)
         self.current_action = self.output_queue.get()
         if self.human_controlled:
             return self.current_action
         return None
-
-    def get_current_action(self):
-        return self.current_action
 
     def close(self):
         self.terminate_event.set()
