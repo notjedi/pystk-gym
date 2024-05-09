@@ -161,13 +161,13 @@ class Race:
         info["difficulty"] = self.config.difficulty
         return info
 
-    def get_path_lines(self) -> np.ndarray[Line3D]:
-        return np.array([Line3D(*node) for node in self.track.path_nodes])
+    def get_path_lines(self) -> List[Line3D]:
+        return [Line3D(*node) for node in self.track.path_nodes]
 
-    def get_path_width(self) -> np.ndarray[np.float32]:
+    def get_path_width(self) -> npt.NDArray[np.float32]:
         return np.array(self.track.path_width)
 
-    def get_path_distance(self) -> np.ndarray[np.float32]:
+    def get_path_distance(self) -> npt.NDArray[np.float32]:
         return np.array(
             sorted(self.track.path_distance[::-1], key=lambda x: x[0])
             if self.config.reverse

@@ -68,7 +68,6 @@ class RaceEnv(ParallelEnv):
         self._make_karts()
 
         self.env_viewer: Optional[EnvViewer] = None
-        # TODO: add actual support for human and also support just viewing the bot playing
         if render_mode == "human":
             assert race_config.num_karts_controlled == 1 or (
                 race_config.num_karts_controlled == 0 and race_config.num_karts > 0
@@ -197,7 +196,7 @@ class RaceEnv(ParallelEnv):
         obs = self.race.observe()
         if mode == "rgb_array":
             return obs
-        else:
+        elif mode == "human" and self.env_viewer is not None:
             self.env_viewer.display(obs[0])
             return None
 

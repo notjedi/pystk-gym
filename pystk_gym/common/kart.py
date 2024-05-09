@@ -1,8 +1,9 @@
 from typing import Any, Dict, List
 
 import numpy as np
+import numpy.typing as npt
 import pystk
-from sympy import Point3D
+from sympy import Point3D, Line3D
 
 
 class Kart:
@@ -10,9 +11,9 @@ class Kart:
         self,
         kart: pystk.Kart,
         is_reverse: bool,
-        path_width: np.ndarray,
-        path_lines: np.ndarray,
-        path_distance: np.ndarray,
+        path_width: npt.NDArray[np.float32],
+        path_lines: List[Line3D],
+        path_distance: npt.NDArray[np.float32],
     ):
         self.kart = kart
         self.id = kart.id
@@ -62,12 +63,11 @@ class Kart:
     def _get_location(self) -> List[int]:
         return self.kart.location
 
-    # TODO: add return type
     def _get_kart_dist_from_center(self) -> float:
         # compute the dist b/w the kart and the center of the track
         location = self.kart.location
         path_node = self.path_lines[self._node_idx]
-        return float(path_node.distance(Point3D(location)).evalf())
+        return float(path_node.distance(Point3D(location)).evalf())  # type: ignore
 
     def _get_is_inside_track(self) -> bool:
         # TODO: is 1 a sensitive tolerance to add? or should i change the value?
