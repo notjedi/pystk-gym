@@ -71,8 +71,10 @@ class PyGameWrapper:
         )
         self.clock = pygame.time.Clock()
 
-    def handle_events(self):
-        # TODO: stop preemptively if not human_controlled
+    def handle_events(self, human_controlled: bool):
+        if not human_controlled:
+            return
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (
                 event.type == pygame.KEYDOWN and event.key == pygame.K_q
@@ -114,8 +116,8 @@ class PyGameWrapper:
                 elif event.key == pygame.K_r:
                     self.current_action.rescue = 0.0
 
-    def display(self, render_data) -> pystk.Action:
-        self.handle_events()
+    def display(self, render_data, human_controlled: bool) -> pystk.Action:
+        self.handle_events(human_controlled)
         pygame.surfarray.blit_array(self.screen, render_data.swapaxes(0, 1))
         pygame.display.flip()
         self.clock.tick(self.display_hertz)
@@ -126,15 +128,23 @@ class PyGameWrapper:
         if self.screen is not None:
             pygame.display.quit()
             pygame.quit()
+            self.screen = None
 
 
-def worker_thread(graphic_config, input_queue, output_queue, terminate_event):
+def worker_thread(
+    graphic_config, input_queue, output_queue, terminate_event, human_controlled: bool
+):
     pygame_wrapper = PyGameWrapper(graphic_config)
     while not terminate_event.is_set():
         try:
             render_data = input_queue.get(timeout=1)
-            current_action = pygame_wrapper.display(render_data)
-            output_queue.put(current_action)
+            if pygame_wrapper.screen is not None:
+                current_action = pygame_wrapper.display(render_data, human_controlled)
+                output_queue.put(current_action)
+            else:
+                output_queue.put(None)
+                pygame_wrapper.close()
+                return
         except queue.Empty:
             pass
     pygame_wrapper.close()
@@ -155,6 +165,7 @@ class EnvViewer:
                 self.input_queue,
                 self.output_queue,
                 self.terminate_event,
+                human_controlled,
             ),
         )
         self.worker_thread.start()
@@ -162,7 +173,7 @@ class EnvViewer:
     def display(self, render_data) -> Optional[pystk.Action]:
         self.input_queue.put(render_data)
         self.current_action = self.output_queue.get()
-        if self.human_controlled:
+        if self.human_controlled and self.current_action is not None:
             return self.current_action
         return None
 
