@@ -10,6 +10,7 @@ def get_reward_fn() -> Callable:
     USE_POWERUP = 0.2
     DRIFT = 0.2
     NITRO = 0.2
+    POSITION = 0.5
     EARLY_END = -1
     NO_MOVEMENT = -0.2
     OUT_OF_TRACK = -0.3
@@ -20,8 +21,8 @@ def get_reward_fn() -> Callable:
 
     def reward_fn(action: pystk.Action, info) -> float:
         reward = -0.02
-        # if action.nitro and info["nitro"]:
-        #     reward += NITRO
+        if action.nitro and info["nitro"]:
+            reward += NITRO
 
         if action.drift and info["velocity"] > 10:
             reward += DRIFT
@@ -36,12 +37,7 @@ def get_reward_fn() -> Callable:
 
         reward += max(0, np.log(info["velocity"] + 1e-9))
 
-        # TODO: add position stuff to info
-        # POSITION = 0.5
-        # if info["position"] < prevInfo["position"]:
-        #     reward += POSITION
-        # elif info["position"] > prevInfo["position"]:
-        #     reward -= POSITION
+        reward += -info["rank"] * POSITION
 
         if not info["is_inside_track"]:
             reward += OUT_OF_TRACK

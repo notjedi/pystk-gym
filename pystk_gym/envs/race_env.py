@@ -190,9 +190,6 @@ class RaceEnv(ParallelEnv):
             for kart in self.get_controlled_karts()
             if not (terminals[kart.id] or truncated[kart.id])
         ]
-
-        print(infos)
-        self.render(self.render_mode)
         return obs, rewards, terminals, truncated, infos
 
     def render(

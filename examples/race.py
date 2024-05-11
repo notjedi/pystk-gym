@@ -11,7 +11,7 @@ if __name__ == "__main__":
         GraphicConfig(800, 600, GraphicQuality.HD),
         RaceConfig.default_config(),
         reward_fn,
-        render_mode="human",
+        render_mode="agent",
     )
     parallel_api_test(env, 1000)
     env.close()
