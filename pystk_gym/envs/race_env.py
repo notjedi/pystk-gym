@@ -40,7 +40,7 @@ class Comparable(Protocol):
 
 class RaceEnv(ParallelEnv):
     metadata = {
-        "render.modes": ["human", "rgb_array"],
+        "render.modes": ["agent", "human", "rgb_array"],
     }
 
     def __init__(
@@ -49,12 +49,13 @@ class RaceEnv(ParallelEnv):
         race_config: RaceConfig,
         reward_func: Callable,
         max_step_cnt: int = 1000,
-        render_mode: Literal["human", "rgb_array"] = "rgb_array",
+        render_mode: Literal["agent", "human", "rgb_array"] = "rgb_array",
     ):
         self.action_class = MultiDiscreteAction()
         self.graphic_config = graphic_config
         self.max_step_cnt = max_step_cnt
         self.reward_func = reward_func
+        self.render_mode = render_mode
         self.steps = 0
 
         self.graphics = graphic_config.get_pystk_config()
@@ -68,11 +69,11 @@ class RaceEnv(ParallelEnv):
         self._make_karts()
 
         self.env_viewer: Optional[EnvViewer] = None
-        if render_mode == "human":
-            assert race_config.num_karts_controlled == 1 or (
-                race_config.num_karts_controlled == 0 and race_config.num_karts > 0
+        if render_mode == "human" or render_mode == "agent":
+            assert race_config.num_karts_controlled == 1 or race_config.num_karts == 1
+            self.env_viewer = EnvViewer(
+                self.graphic_config, human_controlled=render_mode == "human"
             )
-            self.env_viewer = EnvViewer(self.graphic_config, human_controlled=True)
 
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
@@ -102,6 +103,16 @@ class RaceEnv(ParallelEnv):
             agent_id: self.action_class.get_pystk_action(action)
             for agent_id, action in actions.items()
         }
+
+    def _update_info_dict_with_race_info(self, infos: Dict[AgentID, Dict[str, Any]]):
+        nitro_locs = self.race.get_nitro_locs()
+        all_kart_rankings = self.race.get_all_kart_rankings()
+        for info, kart in zip(infos.values(), self.get_controlled_karts()):
+            info["rank"] = all_kart_rankings[kart.id]
+            kart_loc = np.array(info["location"])
+            info["nitro"] = any(
+                np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs
+            )
 
     def _get_reward(
         self, actions: Dict[AgentID, ActionType], infos: Dict[AgentID, dict]
@@ -151,17 +162,17 @@ class RaceEnv(ParallelEnv):
         Dict[AgentID, float],  # reward dictionary
         Dict[AgentID, bool],  # terminated dictionary
         Dict[AgentID, bool],  # truncated dictionary
-        Dict[AgentID, dict],  # info dictionary
+        Dict[AgentID, Dict[str, Any]],  # info dictionary
     ]:
         self.steps += 1
         # TODO: take multiple steps? if so, i have to render intermediate steps
-        if self.env_viewer is None:
-            actions = self._to_stk_action(actions)
-            actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
-        else:
+        if self.render_mode == "human":
             actions = {
                 self.get_controlled_karts()[0].id: self.env_viewer.current_action
             }
+        else:
+            actions = self._to_stk_action(actions)
+            actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
 
         obs = {
             agent_id: obs
@@ -170,6 +181,7 @@ class RaceEnv(ParallelEnv):
             )
         }
         infos = {kart.id: kart.step() for kart in self.get_controlled_karts()}
+        self._update_info_dict_with_race_info(infos)
         rewards = self._get_reward(actions, infos)
         terminals = self._terminal(infos)
         truncated = {kart.id: False for kart in self.get_controlled_karts()}
@@ -179,24 +191,17 @@ class RaceEnv(ParallelEnv):
             if not (terminals[kart.id] or truncated[kart.id])
         ]
 
-        # nitro_locs = self.race.get_nitro_locs()
-        # all_kart_positions = self.race.get_all_kart_positions()
-        # for info, kart in zip(infos, self.get_controlled_karts()):
-        #     info["position"] = all_kart_positions[kart.id]
-        #     kart_loc = np.array(info["location"])
-        #     # TODO: make this more functional programming like
-        #     info["nitro"] = any(
-        #         np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs
-        #     )
+        print(infos)
+        self.render(self.render_mode)
         return obs, rewards, terminals, truncated, infos
 
     def render(
-        self, mode: Literal["rgb_array", "human"] = "rgb_array"
+        self, mode: Literal["agent", "human", "rgb_array"] = "rgb_array"
     ) -> Optional[ObsType]:
         obs = self.race.observe()
         if mode == "rgb_array":
             return obs
-        elif mode == "human" and self.env_viewer is not None:
+        elif (mode == "human" or mode == "agent") and self.env_viewer is not None:
             self.env_viewer.display(obs[0])
             return None
 

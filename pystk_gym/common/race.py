@@ -195,18 +195,16 @@ class Race:
     def get_controlled_karts(self) -> List[pystk.Kart]:
         return list(np.array(self.get_all_karts())[self.get_controlled_kart_mask()])
 
-    def get_nitro_locs(self) -> npt.NDArray[np.float64]:
+    def get_nitro_locs(self) -> List[List[int]]:
         NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
-        return np.array(
-            [item.location for item in self.state.items if item in NITRO_TYPE]
-        )
+        return [item.location for item in self.state.items if item in NITRO_TYPE]
 
     def get_all_kart_rankings(self) -> Dict[int, int]:
         overall_dists = {
             kart.id: kart.overall_distance for kart in self.get_all_karts()
         }
         return {
-            id: i
+            id: self.config.num_kart - i
             for i, (id, _) in enumerate(
                 sorted(overall_dists.items(), key=lambda x: x[1])
             )

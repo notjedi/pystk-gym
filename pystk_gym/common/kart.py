@@ -123,7 +123,7 @@ class Kart:
 
         return info
 
-    def step(self) -> dict:
+    def step(self) -> Dict[str, Any]:
         self._update_node_idx()
         info = self.get_info()
 
