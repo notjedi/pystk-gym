@@ -5,6 +5,8 @@ import numpy.typing as npt
 import pystk
 from sympy import Point3D, Line3D
 
+from .info import Info
+
 
 class Kart:
     def __init__(
@@ -83,62 +85,64 @@ class Kart:
     def is_done(self) -> bool:
         return self.kart.finish_time > 0
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> Dict[Info, Any]:
         info = {}
 
         # basic info
-        info["done"] = self.is_done()
-        info["jumping"] = self._get_jumping()
-        info["powerup"] = self._get_powerup()
-        info["location"] = self._get_location()
-        info["velocity"] = self._get_velocity()
-        info["attachment"] = self._get_attachment()
-        info["finish_time"] = self._get_finish_time()
-        info["is_inside_track"] = self._get_is_inside_track()
-        info["overall_distance"] = self._get_overall_distance()
+        info[Info.Done] = self.is_done()
+        info[Info.Jumping] = self._get_jumping()
+        info[Info.Powerup] = self._get_powerup()
+        info[Info.Location] = self._get_location()
+        info[Info.Velocity] = self._get_velocity()
+        info[Info.Attachment] = self._get_attachment()
+        info[Info.FinishTime] = self._get_finish_time()
+        info[Info.IsInsideTrack] = self._get_is_inside_track()
+        info[Info.OverallDistance] = self._get_overall_distance()
 
         # count info
-        info["jump_count"] = self.jump_count
-        info["backward_count"] = self.backward_count
-        info["no_movement_count"] = self.no_movement_count
-        info["out_of_track_count"] = self.out_of_track_count
+        info[Info.JumpCount] = self.jump_count
+        info[Info.BackwardCount] = self.backward_count
+        info[Info.NoMovementCount] = self.no_movement_count
+        info[Info.OutOfTrackCount] = self.out_of_track_count
 
         # info based on _prev_info
         if self._prev_info:
-            delta_dist = info["overall_distance"] - self._prev_info["overall_distance"]
-            info["delta_dist"] = delta_dist
+            delta_dist = (
+                info[Info.OverallDistance] - self._prev_info[Info.OverallDistance]
+            )
+            info[Info.DeltaDist] = delta_dist
             if delta_dist < 0:
-                info["backward"] = True
-                info["no_movement"] = False
+                info[Info.Backward] = True
+                info[Info.NoMovement] = False
             elif delta_dist == 0:
-                info["backward"] = False
-                info["no_movement"] = True
+                info[Info.Backward] = False
+                info[Info.NoMovement] = True
             else:
-                info["backward"] = False
-                info["no_movement"] = False
+                info[Info.Backward] = False
+                info[Info.NoMovement] = False
         else:
-            info["delta_dist"] = 0
-            info["backward"] = False
-            info["no_movement"] = False
+            info[Info.DeltaDist] = 0
+            info[Info.Backward] = False
+            info[Info.NoMovement] = False
 
         return info
 
-    def step(self) -> Dict[str, Any]:
+    def step(self) -> Dict[Info, Any]:
         self._update_node_idx()
         info = self.get_info()
 
-        if not info["is_inside_track"]:
+        if not info[Info.IsInsideTrack]:
             self.out_of_track_count += 1
 
-        delta_dist = info["delta_dist"]
+        delta_dist = info[Info.DeltaDist]
         if delta_dist < 0:
             # TODO: check if vals(backward and no_movement) are assigned correctly
             self.backward_count += 1
         elif delta_dist == 0:
             self.no_movement_count += 1
 
-        if info["jumping"] and (
-            self._prev_info is not None and not self._prev_info["jumping"]
+        if info[Info.Jumping] and (
+            self._prev_info is not None and not self._prev_info[Info.Jumping]
         ):
             self.jump_count += 1
 

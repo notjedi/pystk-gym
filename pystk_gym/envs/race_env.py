@@ -20,6 +20,7 @@ from pettingzoo import ParallelEnv
 
 from ..common.actions import ActionType, MultiDiscreteAction
 from ..common.graphics import EnvViewer, GraphicConfig
+from ..common.info import Info
 from ..common.kart import Kart
 from ..common.race import ObsType, Race, RaceConfig
 
@@ -104,13 +105,13 @@ class RaceEnv(ParallelEnv):
             for agent_id, action in actions.items()
         }
 
-    def _update_info_dict_with_race_info(self, infos: Dict[AgentID, Dict[str, Any]]):
+    def _update_info_dict_with_race_info(self, infos: Dict[AgentID, Dict[Info, Any]]):
         nitro_locs = self.race.get_nitro_locs()
         all_kart_rankings = self.race.get_all_kart_rankings()
         for info, kart in zip(infos.values(), self.get_controlled_karts()):
-            info["rank"] = all_kart_rankings[kart.id]
-            kart_loc = np.array(info["location"])
-            info["nitro"] = any(
+            info[Info.Rank] = all_kart_rankings[kart.id]
+            kart_loc = np.array(info[Info.Location])
+            info[Info.Nitro] = any(
                 np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs
             )
 
@@ -127,10 +128,10 @@ class RaceEnv(ParallelEnv):
     def _terminal(self, infos: Dict[AgentID, dict]) -> Dict[AgentID, bool]:
         step_limit_reached = self.steps > self.max_step_cnt
         return {
-            agent_id: not info["is_inside_track"]
-            or info["backward"]
-            or info["no_movement"]
-            or info["done"]
+            agent_id: not info[Info.IsInsideTrack]
+            or info[Info.Backward]
+            or info[Info.NoMovement]
+            or info[Info.Done]
             or step_limit_reached
             for agent_id, info in infos.items()
         }
@@ -162,7 +163,7 @@ class RaceEnv(ParallelEnv):
         Dict[AgentID, float],  # reward dictionary
         Dict[AgentID, bool],  # terminated dictionary
         Dict[AgentID, bool],  # truncated dictionary
-        Dict[AgentID, Dict[str, Any]],  # info dictionary
+        Dict[AgentID, Dict[Info, Any]],  # info dictionary
     ]:
         self.steps += 1
         # TODO: take multiple steps? if so, i have to render intermediate steps
@@ -204,8 +205,7 @@ class RaceEnv(ParallelEnv):
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
-    ) -> Tuple[Dict[AgentID, ObsType], Dict[AgentID, Dict[str, Any]]]:
-        # BUG: using reset here would not restart the race
+    ) -> Tuple[Dict[AgentID, ObsType], Dict[AgentID, Dict[Info, Any]]]:
         self.steps = 0
 
         reset_obs = self.race.reset()
