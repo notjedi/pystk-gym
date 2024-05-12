@@ -50,6 +50,7 @@ class RaceEnv(ParallelEnv):
         race_config: RaceConfig,
         reward_func: Callable,
         max_step_cnt: int = 1000,
+        return_info: bool = True,
         render_mode: Literal["agent", "human", "rgb_array"] = "rgb_array",
     ):
         self.action_class = MultiDiscreteAction()
@@ -67,7 +68,7 @@ class RaceEnv(ParallelEnv):
             self.graphics.screen_width,
             3,
         )
-        self._make_karts()
+        self._make_karts(return_info)
 
         self.env_viewer: Optional[EnvViewer] = None
         if render_mode == "human" or render_mode == "agent":
@@ -79,7 +80,7 @@ class RaceEnv(ParallelEnv):
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
 
-    def _make_karts(self):
+    def _make_karts(self, return_info):
         is_reverse, path_width, path_lines, path_distance = (
             self.race.get_race_info()["reverse"],
             self.race.get_path_width(),
@@ -93,6 +94,7 @@ class RaceEnv(ParallelEnv):
                 path_width,
                 path_lines,
                 path_distance,
+                return_info=return_info,
             )
             for kart in self.race.get_controlled_karts()
         ]

@@ -16,6 +16,7 @@ class Kart:
         path_width: npt.NDArray[np.float32],
         path_lines: List[Line3D],
         path_distance: npt.NDArray[np.float32],
+        return_info: bool = True,
     ):
         self.kart = kart
         self.id = kart.id
@@ -23,6 +24,7 @@ class Kart:
         self.path_width = path_width
         self.path_lines = path_lines
         self.path_distance = path_distance
+        self.return_info = return_info
         self._node_idx = 0
 
     def _init_vars(self):
@@ -72,11 +74,9 @@ class Kart:
         return float(path_node.distance(Point3D(location)).evalf())  # type: ignore
 
     def _get_is_inside_track(self) -> bool:
-        # TODO: is 1 a sensitive tolerance to add? or should i change the value?
-        # TODO: add user defined tolerance
         curr_path_width = self.path_width[self._node_idx][0]
         kart_dist = self._get_kart_dist_from_center()
-        return abs(kart_dist) <= ((curr_path_width / 2) + 1)
+        return abs(kart_dist) <= (curr_path_width / 2)
 
     def _get_velocity(self) -> float:
         # returns the magnitude of velocity
@@ -98,12 +98,6 @@ class Kart:
         info[Info.FinishTime] = self._get_finish_time()
         info[Info.IsInsideTrack] = self._get_is_inside_track()
         info[Info.OverallDistance] = self._get_overall_distance()
-
-        # count info
-        info[Info.JumpCount] = self.jump_count
-        info[Info.BackwardCount] = self.backward_count
-        info[Info.NoMovementCount] = self.no_movement_count
-        info[Info.OutOfTrackCount] = self.out_of_track_count
 
         # info based on _prev_info
         if self._prev_info:
@@ -129,24 +123,26 @@ class Kart:
 
     def step(self) -> Dict[Info, Any]:
         self._update_node_idx()
-        info = self.get_info()
+        if self.return_info:
+            info = self.get_info()
+            if not info[Info.IsInsideTrack]:
+                self.out_of_track_count += 1
+                info[Info.OutOfTrackCount] = self.out_of_track_count
+            if info[Info.Backward]:
+                self.backward_count += 1
+                info[Info.BackwardCount] = self.backward_count
+            elif info[Info.NoMovement] == 0:
+                self.no_movement_count += 1
+                info[Info.NoMovementCount] = self.no_movement_count
 
-        if not info[Info.IsInsideTrack]:
-            self.out_of_track_count += 1
-
-        delta_dist = info[Info.DeltaDist]
-        if delta_dist < 0:
-            # TODO: check if vals(backward and no_movement) are assigned correctly
-            self.backward_count += 1
-        elif delta_dist == 0:
-            self.no_movement_count += 1
-
-        if info[Info.Jumping] and (
-            self._prev_info is not None and not self._prev_info[Info.Jumping]
-        ):
-            self.jump_count += 1
-
-        self.prev_info = info
+            if info[Info.Jumping] and (
+                self._prev_info is not None and not self._prev_info[Info.Jumping]
+            ):
+                self.jump_count += 1
+                info[Info.JumpCount] = self.jump_count
+            self.prev_info = info
+        else:
+            info = {}
         return info
 
     def reset(self):
