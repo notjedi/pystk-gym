@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 import numpy as np
 import numpy.typing as npt
 import pystk
-from sympy import Point3D, Line3D
+from sympy import Line3D, Point3D
 
 from .info import Info
 

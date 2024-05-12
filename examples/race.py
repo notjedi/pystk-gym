@@ -1,4 +1,5 @@
 import argparse
+
 from pettingzoo.test import parallel_api_test
 
 from pystk_gym import RaceEnv
