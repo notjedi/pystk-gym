@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Any, Callable, Dict
 
 import numpy as np
 import pystk
@@ -20,7 +20,7 @@ def get_reward_fn() -> Callable:
 
     no_movement_threshold = 5
 
-    def reward_fn(action: pystk.Action, info) -> float:
+    def reward_fn(action: pystk.Action, info: Dict[Info, Any]) -> float:
         reward = -0.02
         if action.nitro and info[Info.Nitro]:
             reward += NITRO

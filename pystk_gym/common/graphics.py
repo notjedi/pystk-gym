@@ -5,6 +5,8 @@ import threading
 from enum import Enum
 from typing import Optional
 
+import numpy as np
+import numpy.typing as npt
 import pygame
 import pystk
 
@@ -57,7 +59,7 @@ class GraphicConfig:
 
 
 class PyGameWrapper:
-    def __init__(self, graphic_config):
+    def __init__(self, graphic_config: GraphicConfig):
         self.screen_width = graphic_config.width
         self.screen_height = graphic_config.height
         self.current_action = pystk.Action()
@@ -116,7 +118,9 @@ class PyGameWrapper:
                 elif event.key == pygame.K_r:
                     self.current_action.rescue = 0.0
 
-    def display(self, render_data, human_controlled: bool) -> pystk.Action:
+    def display(
+        self, render_data: npt.NDArray[np.uint8], human_controlled: bool
+    ) -> pystk.Action:
         self.handle_events(human_controlled)
         pygame.surfarray.blit_array(self.screen, render_data.swapaxes(0, 1))
         pygame.display.flip()
@@ -132,7 +136,11 @@ class PyGameWrapper:
 
 
 def worker_thread(
-    graphic_config, input_queue, output_queue, terminate_event, human_controlled: bool
+    graphic_config: GraphicConfig,
+    input_queue: queue.Queue,
+    output_queue: queue.Queue,
+    terminate_event: threading.Event,
+    human_controlled: bool,
 ):
     pygame_wrapper = PyGameWrapper(graphic_config)
     while not terminate_event.is_set():
@@ -151,7 +159,7 @@ def worker_thread(
 
 
 class EnvViewer:
-    def __init__(self, graphic_config, human_controlled=False):
+    def __init__(self, graphic_config: GraphicConfig, human_controlled=False):
         self.human_controlled = human_controlled
         self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
@@ -170,7 +178,7 @@ class EnvViewer:
         )
         self.worker_thread.start()
 
-    def display(self, render_data) -> Optional[pystk.Action]:
+    def display(self, render_data: npt.NDArray[np.uint8]) -> Optional[pystk.Action]:
         self.input_queue.put(render_data)
         self.current_action = self.output_queue.get()
         if self.human_controlled and self.current_action is not None:

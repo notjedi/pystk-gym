@@ -80,7 +80,7 @@ class RaceEnv(ParallelEnv):
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
 
-    def _make_karts(self, return_info):
+    def _make_karts(self, return_info: bool):
         is_reverse, path_width, path_lines, path_distance = (
             self.race.get_race_info()["reverse"],
             self.race.get_path_width(),

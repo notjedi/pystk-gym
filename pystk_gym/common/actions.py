@@ -57,7 +57,9 @@ class MultiDiscreteAction:
     def __init__(self):
         self.action_space = spaces.MultiDiscrete([2, 2, 3, 2, 2, 2, 2])
 
-    def _get_actions_from_dict(self, actions: dict) -> pystk.Action:
+    def _get_actions_from_dict(
+        self, actions: Dict[str, Union[int, float]]
+    ) -> pystk.Action:
         """
         Process a dict object mapping action_name to action_value and returns a pystk.Action object.
 

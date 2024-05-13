@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -27,7 +27,7 @@ class RaceConfig:
     def __init__(
         self,
         track: Optional[str] = None,
-        kart: Optional[str] = None,
+        kart: Optional[Union[str, List[str]]] = None,
         num_karts: int = 5,
         laps: int = 1,
         reverse: Optional[bool] = None,
@@ -89,8 +89,6 @@ class RaceConfig:
         reverse = np.random.choice([True, False]) if reverse is None else reverse
         assert num_karts >= num_karts_controlled
 
-        # TODO: TESTS add a matrix/grid check test to check all combinations of TRACKS and KARTS
-        # TODO: TESTS add tests to assert all tracks work
         # TODO: add fps kinda thing in hertz like highway_env - is this what step_size does?
         if isinstance(karts, list):
             assert set(karts).issubset(
@@ -151,7 +149,7 @@ class Race:
         self.track.update()
         self.reset()
 
-    def get_race_info(self) -> Dict:
+    def get_race_info(self) -> Dict[str, Any]:
         info = {}
         info["laps"] = self.config.laps
         info["track"] = self.config.track
