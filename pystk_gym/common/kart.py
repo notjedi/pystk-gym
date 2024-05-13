@@ -25,14 +25,13 @@ class Kart:
         self.path_lines = path_lines
         self.path_distance = path_distance
         self.return_info = return_info
-        self._node_idx = 0
 
-    def _init_vars(self):
         self.jump_count = 0
         self._prev_info = None
         self.backward_count = 0
         self.no_movement_count = 0
         self.out_of_track_count = 0
+        self._node_idx = 0
 
     def _update_node_idx(self):
         # TODO: sanity check this logic when self.is_reverse == True
@@ -89,35 +88,35 @@ class Kart:
         info = {}
 
         # basic info
-        info[Info.Done] = self.is_done()
-        info[Info.Jumping] = self._get_jumping()
-        info[Info.Powerup] = self._get_powerup()
-        info[Info.Location] = self._get_location()
-        info[Info.Velocity] = self._get_velocity()
-        info[Info.Attachment] = self._get_attachment()
-        info[Info.FinishTime] = self._get_finish_time()
-        info[Info.IsInsideTrack] = self._get_is_inside_track()
-        info[Info.OverallDistance] = self._get_overall_distance()
+        info[Info.DONE] = self.is_done()
+        info[Info.JUMPING] = self._get_jumping()
+        info[Info.POWERUP] = self._get_powerup()
+        info[Info.LOCATION] = self._get_location()
+        info[Info.VELOCITY] = self._get_velocity()
+        info[Info.ATTACHMENT] = self._get_attachment()
+        info[Info.FINISH_TIME] = self._get_finish_time()
+        info[Info.IS_INSIDE_TRACK] = self._get_is_inside_track()
+        info[Info.OVERALL_DISTANCE] = self._get_overall_distance()
 
         # info based on _prev_info
         if self._prev_info:
             delta_dist = (
-                info[Info.OverallDistance] - self._prev_info[Info.OverallDistance]
+                info[Info.OVERALL_DISTANCE] - self._prev_info[Info.OVERALL_DISTANCE]
             )
-            info[Info.DeltaDist] = delta_dist
+            info[Info.DELTA_DIST] = delta_dist
             if delta_dist < 0:
-                info[Info.Backward] = True
-                info[Info.NoMovement] = False
+                info[Info.BACKWARD] = True
+                info[Info.NO_MOVEMENT] = False
             elif delta_dist == 0:
-                info[Info.Backward] = False
-                info[Info.NoMovement] = True
+                info[Info.BACKWARD] = False
+                info[Info.NO_MOVEMENT] = True
             else:
-                info[Info.Backward] = False
-                info[Info.NoMovement] = False
+                info[Info.BACKWARD] = False
+                info[Info.NO_MOVEMENT] = False
         else:
-            info[Info.DeltaDist] = 0
-            info[Info.Backward] = False
-            info[Info.NoMovement] = False
+            info[Info.DELTA_DIST] = 0
+            info[Info.BACKWARD] = False
+            info[Info.NO_MOVEMENT] = False
 
         return info
 
@@ -125,25 +124,29 @@ class Kart:
         self._update_node_idx()
         if self.return_info:
             info = self.get_info()
-            if not info[Info.IsInsideTrack]:
+            if not info[Info.IS_INSIDE_TRACK]:
                 self.out_of_track_count += 1
-                info[Info.OutOfTrackCount] = self.out_of_track_count
-            if info[Info.Backward]:
+                info[Info.NO_MOVEMENT_COUNT] = self.out_of_track_count
+            if info[Info.BACKWARD]:
                 self.backward_count += 1
-                info[Info.BackwardCount] = self.backward_count
-            elif info[Info.NoMovement] == 0:
+                info[Info.BACKWARD_COUNT] = self.backward_count
+            elif info[Info.NO_MOVEMENT] == 0:
                 self.no_movement_count += 1
-                info[Info.NoMovementCount] = self.no_movement_count
+                info[Info.NO_MOVEMENT_COUNT] = self.no_movement_count
 
-            if info[Info.Jumping] and (
-                self._prev_info is not None and not self._prev_info[Info.Jumping]
+            if info[Info.JUMPING] and (
+                self._prev_info is not None and not self._prev_info[Info.JUMPING]
             ):
                 self.jump_count += 1
-                info[Info.JumpCount] = self.jump_count
-            self.prev_info = info
+                info[Info.JUMP_COUNT] = self.jump_count
+            self._prev_info = info
         else:
             info = {}
         return info
 
     def reset(self):
-        self._init_vars()
+        self.jump_count = 0
+        self._prev_info = None
+        self.backward_count = 0
+        self.no_movement_count = 0
+        self.out_of_track_count = 0

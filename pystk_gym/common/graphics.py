@@ -83,40 +83,24 @@ class PyGameWrapper:
             ):
                 self.close()
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP or event.key == pygame.K_w:
-                    self.current_action.acceleration = 1.0
-                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.current_action.brake = 1.0
-                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    self.current_action.steer = 1.0
-                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    self.current_action.steer = -1.0
+            if event.type in (pygame.KEYDOWN, pygame.KEYUP):
+                is_key_down = float(event.type == pygame.KEYDOWN)
+                if event.key in (pygame.K_UP, pygame.K_w):
+                    self.current_action.acceleration = is_key_down
+                elif event.key in (pygame.K_DOWN, pygame.K_s):
+                    self.current_action.brake = is_key_down
+                elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                    self.current_action.steer = 1.0 if is_key_down else 0.0
+                elif event.key in (pygame.K_LEFT, pygame.K_a):
+                    self.current_action.steer = -1.0 if is_key_down else 0.0
                 elif event.key == pygame.K_SPACE:
-                    self.current_action.fire = 1.0
+                    self.current_action.fire = is_key_down
                 elif event.key == pygame.K_m:
-                    self.current_action.drift = 1.0
+                    self.current_action.drift = is_key_down
                 elif event.key == pygame.K_n:
-                    self.current_action.nitro = 1.0
+                    self.current_action.nitro = is_key_down
                 elif event.key == pygame.K_r:
-                    self.current_action.rescue = 1.0
-            elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_UP or event.key == pygame.K_w:
-                    self.current_action.acceleration = 0.0
-                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.current_action.brake = 0.0
-                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    self.current_action.steer = 0.0
-                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    self.current_action.steer = 0.0
-                elif event.key == pygame.K_SPACE:
-                    self.current_action.fire = 0.0
-                elif event.key == pygame.K_m:
-                    self.current_action.drift = 0.0
-                elif event.key == pygame.K_n:
-                    self.current_action.nitro = 0.0
-                elif event.key == pygame.K_r:
-                    self.current_action.rescue = 0.0
+                    self.current_action.rescue = is_key_down
 
     def display(
         self, render_data: npt.NDArray[np.uint8], human_controlled: bool

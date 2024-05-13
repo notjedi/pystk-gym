@@ -7,59 +7,60 @@ from .info import Info
 
 
 def get_reward_fn() -> Callable:
-    FINISH = 1
-    COLLECT_POWERUP = 0.2
-    USE_POWERUP = 0.2
-    DRIFT = 0.2
-    NITRO = 0.2
-    POSITION = 0.5
-    NO_MOVEMENT = -0.2
-    OUT_OF_TRACK = -0.3
-    BACKWARDS = -0.7
-    JUMP = -0.3
+    class Reward:
+        FINISH = 1
+        COLLECT_POWERUP = 0.2
+        USE_POWERUP = 0.2
+        DRIFT = 0.2
+        NITRO = 0.2
+        POSITION = 0.5
+        NO_MOVEMENT = -0.2
+        OUT_OF_TRACK = -0.3
+        BACKWARDS = -0.7
+        JUMP = -0.3
 
     no_movement_threshold = 5
 
     def reward_fn(action: pystk.Action, info: Dict[Info, Any]) -> float:
         reward = -0.02
-        if action.nitro and info[Info.Nitro]:
-            reward += NITRO
+        if action.nitro and info[Info.NITRO]:
+            reward += Reward.NITRO
 
-        if action.drift and info[Info.Velocity] > 10:
-            reward += DRIFT
-        elif action.drift and info[Info.Velocity] < 5:
-            reward -= DRIFT
+        if action.drift and info[Info.VELOCITY] > 10:
+            reward += Reward.DRIFT
+        elif action.drift and info[Info.VELOCITY] < 5:
+            reward -= Reward.DRIFT
 
-        if action.fire and info[Info.Powerup].value:
-            reward += USE_POWERUP
+        if action.fire and info[Info.POWERUP].value:
+            reward += Reward.USE_POWERUP
 
-        if info[Info.Done]:
-            reward += FINISH
+        if info[Info.DONE]:
+            reward += Reward.FINISH
 
-        reward += max(0, np.log(info[Info.Velocity] + 1e-9))
+        reward += max(0, np.log(info[Info.VELOCITY] + 1e-9))
 
-        reward += -info[Info.Rank] * POSITION
+        reward += -info[Info.RANK] * Reward.POSITION
 
-        if not info[Info.IsInsideTrack]:
-            reward += OUT_OF_TRACK
+        if not info[Info.IS_INSIDE_TRACK]:
+            reward += Reward.OUT_OF_TRACK
 
-        if info[Info.Backward]:
-            reward += BACKWARDS
-        if info[Info.NoMovement]:
-            reward += NO_MOVEMENT
+        if info[Info.BACKWARD]:
+            reward += Reward.BACKWARDS
+        if info[Info.NO_MOVEMENT]:
+            reward += Reward.NO_MOVEMENT
 
-        delta_dist = info[Info.DeltaDist]
+        delta_dist = info[Info.DELTA_DIST]
         if delta_dist > 5:
             reward += np.clip(delta_dist, 0, 5)
 
-        if info[Info.NoMovementCount] >= no_movement_threshold:
-            reward += NO_MOVEMENT
+        if info[Info.NO_MOVEMENT_COUNT] >= no_movement_threshold:
+            reward += Reward.NO_MOVEMENT
 
-        if info[Info.Powerup].value:
-            reward += COLLECT_POWERUP
+        if info[Info.POWERUP].value:
+            reward += Reward.COLLECT_POWERUP
 
-        if info[Info.Jumping]:
-            reward += JUMP
+        if info[Info.JUMPING]:
+            reward += Reward.JUMP
 
         return np.clip(reward, -10, 10)
 

@@ -23,6 +23,7 @@ class RaceConfig:
         "nolok", "pidgin", "puffy", "sara_the_racer", "sara_the_wizard", "suzanne", "tux", "wilber",
         "xue"
     ]  # fmt: skip
+    NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
 
     def __init__(
         self,
@@ -194,8 +195,9 @@ class Race:
         return list(np.array(self.get_all_karts())[self.get_controlled_kart_mask()])
 
     def get_nitro_locs(self) -> List[List[int]]:
-        NITRO_TYPE = [pystk.Item.Type.NITRO_SMALL, pystk.Item.Type.NITRO_BIG]
-        return [item.location for item in self.state.items if item in NITRO_TYPE]
+        return [
+            item.location for item in self.state.items if item in RaceConfig.NITRO_TYPE
+        ]
 
     def get_all_kart_rankings(self) -> Dict[int, int]:
         overall_dists = {

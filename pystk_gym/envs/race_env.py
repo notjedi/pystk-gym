@@ -26,7 +26,7 @@ from ..common.race import ObsType, Race, RaceConfig
 
 # https://github.com/python/typing/issues/59
 C = TypeVar("C", bound="Comparable")
-AgentID = TypeVar("AgentID", bound="Comparable")
+AgentId = TypeVar("AgentId", bound="Comparable")
 
 
 class Comparable(Protocol):
@@ -100,26 +100,26 @@ class RaceEnv(ParallelEnv):
         ]
 
     def _to_stk_action(
-        self, actions: Dict[AgentID, ActionType]
-    ) -> Dict[AgentID, pystk.Action]:
+        self, actions: Dict[AgentId, ActionType]
+    ) -> Dict[AgentId, pystk.Action]:
         return {
             agent_id: self.action_class.get_pystk_action(action)
             for agent_id, action in actions.items()
         }
 
-    def _update_info_dict_with_race_info(self, infos: Dict[AgentID, Dict[Info, Any]]):
+    def _update_info_dict_with_race_info(self, infos: Dict[AgentId, Dict[Info, Any]]):
         nitro_locs = self.race.get_nitro_locs()
         all_kart_rankings = self.race.get_all_kart_rankings()
         for info, kart in zip(infos.values(), self.get_controlled_karts()):
-            info[Info.Rank] = all_kart_rankings[kart.id]
-            kart_loc = np.array(info[Info.Location])
-            info[Info.Nitro] = any(
+            info[Info.RANK] = all_kart_rankings[kart.id]
+            kart_loc = np.array(info[Info.LOCATION])
+            info[Info.NITRO] = any(
                 np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs
             )
 
     def _get_reward(
-        self, actions: Dict[AgentID, ActionType], infos: Dict[AgentID, dict]
-    ) -> Dict[AgentID, float]:
+        self, actions: Dict[AgentId, ActionType], infos: Dict[AgentId, dict]
+    ) -> Dict[AgentId, float]:
         return {
             agent_id: self.reward_func(
                 self.action_class.get_pystk_action(actions[agent_id]), infos[agent_id]
@@ -127,13 +127,13 @@ class RaceEnv(ParallelEnv):
             for agent_id in actions.keys()
         }
 
-    def _terminal(self, infos: Dict[AgentID, dict]) -> Dict[AgentID, bool]:
+    def _terminal(self, infos: Dict[AgentId, dict]) -> Dict[AgentId, bool]:
         step_limit_reached = self.steps > self.max_step_cnt
         return {
-            agent_id: not info[Info.IsInsideTrack]
-            or info[Info.Backward]
-            or info[Info.NoMovement]
-            or info[Info.Done]
+            agent_id: not info[Info.IS_INSIDE_TRACK]
+            or info[Info.BACKWARD]
+            or info[Info.NO_MOVEMENT]
+            or info[Info.DONE]
             or step_limit_reached
             for agent_id, info in infos.items()
         }
@@ -160,12 +160,12 @@ class RaceEnv(ParallelEnv):
     def action_space(self, agent) -> spaces.MultiDiscrete:
         return self.action_class.space()
 
-    def step(self, actions: Dict[AgentID, ActionType]) -> Tuple[
-        Dict[AgentID, ObsType],  # observation dictionary
-        Dict[AgentID, float],  # reward dictionary
-        Dict[AgentID, bool],  # terminated dictionary
-        Dict[AgentID, bool],  # truncated dictionary
-        Dict[AgentID, Dict[Info, Any]],  # info dictionary
+    def step(self, actions: Dict[AgentId, ActionType]) -> Tuple[
+        Dict[AgentId, ObsType],  # observation dictionary
+        Dict[AgentId, float],  # reward dictionary
+        Dict[AgentId, bool],  # terminated dictionary
+        Dict[AgentId, bool],  # truncated dictionary
+        Dict[AgentId, Dict[Info, Any]],  # info dictionary
     ]:
         self.steps += 1
         # TODO: take multiple steps? if so, i have to render intermediate steps
@@ -175,14 +175,9 @@ class RaceEnv(ParallelEnv):
             }
         else:
             actions = self._to_stk_action(actions)
-            actions = {k: v for k, v in sorted(actions.items(), key=lambda x: x[0])}
+            actions = dict(sorted(actions.items(), key=lambda x: x[0]))
 
-        obs = {
-            agent_id: obs
-            for agent_id, obs in zip(
-                actions.keys(), self.race.step(list(actions.values()))
-            )
-        }
+        obs = dict(zip(actions.keys(), self.race.step(list(actions.values()))))
         infos = {kart.id: kart.step() for kart in self.get_controlled_karts()}
         self._update_info_dict_with_race_info(infos)
         rewards = self._get_reward(actions, infos)
@@ -201,13 +196,13 @@ class RaceEnv(ParallelEnv):
         obs = self.race.observe()
         if mode == "rgb_array":
             return obs
-        elif (mode == "human" or mode == "agent") and self.env_viewer is not None:
+        if mode in ("human", "agent") and self.env_viewer is not None:
             self.env_viewer.display(obs[0])
-            return None
+        return None
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
-    ) -> Tuple[Dict[AgentID, ObsType], Dict[AgentID, Dict[Info, Any]]]:
+    ) -> Tuple[Dict[AgentId, ObsType], Dict[AgentId, Dict[Info, Any]]]:
         self.steps = 0
 
         reset_obs = self.race.reset()
