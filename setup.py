@@ -31,5 +31,7 @@ setuptools.setup(
         "pettingzoo",
         "PySuperTuxKart",
     ],
-    extras_require={"dev": ["mypy", "black", "isort", "flake8", "pyright", "pytest"]},
+    extras_require={
+        "dev": ["mypy", "black", "isort", "flake8", "pylint", "pyright", "pytest"]
+    },
 )
