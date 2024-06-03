@@ -15,9 +15,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     reward_fn = get_reward_fn()
+    race_config = RaceConfig.default_config()
+    # race_config.reverse = True
     env = RaceEnv(
         GraphicConfig(800, 600, GraphicQuality.HD),
-        RaceConfig.default_config(),
+        race_config,
         reward_fn,
         render_mode=args.mode,
     )

@@ -130,9 +130,9 @@ class RaceEnv(ParallelEnv):
     def _terminal(self, infos: Dict[AgentId, dict]) -> Dict[AgentId, bool]:
         step_limit_reached = self.steps > self.max_step_cnt
         return {
-            agent_id: not info[Info.IS_INSIDE_TRACK]
-            or info[Info.BACKWARD]
-            or info[Info.NO_MOVEMENT]
+            agent_id: info[Info.OUT_OF_TRACK_COUNT] > 25
+            or info[Info.BACKWARD_COUNT] > 50
+            or info[Info.NO_MOVEMENT_COUNT] > 25
             or info[Info.DONE]
             or step_limit_reached
             for agent_id, info in infos.items()

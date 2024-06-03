@@ -53,7 +53,10 @@ def get_reward_fn() -> Callable:
         if delta_dist > 5:
             reward += np.clip(delta_dist, 0, 5)
 
-        if info[Info.NO_MOVEMENT_COUNT] >= no_movement_threshold:
+        if (
+            Info.NO_MOVEMENT_COUNT in info
+            and info[Info.NO_MOVEMENT_COUNT] >= no_movement_threshold
+        ):
             reward += Reward.NO_MOVEMENT
 
         if info[Info.POWERUP].value:

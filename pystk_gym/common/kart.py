@@ -78,7 +78,6 @@ class Kart:
         return abs(kart_dist) <= (curr_path_width / 2)
 
     def _get_velocity(self) -> float:
-        # returns the magnitude of velocity
         return np.sqrt(np.sum(np.array(self.kart.velocity) ** 2))
 
     def is_done(self) -> bool:
@@ -124,21 +123,17 @@ class Kart:
         self._update_node_idx()
         if self.return_info:
             info = self.get_info()
-            if not info[Info.IS_INSIDE_TRACK]:
-                self.out_of_track_count += 1
-                info[Info.NO_MOVEMENT_COUNT] = self.out_of_track_count
-            if info[Info.BACKWARD]:
-                self.backward_count += 1
-                info[Info.BACKWARD_COUNT] = self.backward_count
-            elif info[Info.NO_MOVEMENT] == 0:
-                self.no_movement_count += 1
-                info[Info.NO_MOVEMENT_COUNT] = self.no_movement_count
-
+            self.out_of_track_count += not info[Info.IS_INSIDE_TRACK]
+            self.backward_count += info[Info.BACKWARD]
+            self.no_movement_count += info[Info.NO_MOVEMENT]
             if info[Info.JUMPING] and (
                 self._prev_info is not None and not self._prev_info[Info.JUMPING]
             ):
                 self.jump_count += 1
-                info[Info.JUMP_COUNT] = self.jump_count
+            info[Info.OUT_OF_TRACK_COUNT] = self.out_of_track_count
+            info[Info.BACKWARD_COUNT] = self.backward_count
+            info[Info.NO_MOVEMENT_COUNT] = self.no_movement_count
+            info[Info.JUMP_COUNT] = self.jump_count
             self._prev_info = info
         else:
             info = {}
