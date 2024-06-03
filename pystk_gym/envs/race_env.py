@@ -71,7 +71,7 @@ class RaceEnv(ParallelEnv):
         self._make_karts(return_info)
 
         self.env_viewer: Optional[EnvViewer] = None
-        if render_mode == "human" or render_mode == "agent":
+        if render_mode in ("human", "agent"):
             assert race_config.num_karts_controlled == 1 or race_config.num_karts == 1
             self.env_viewer = EnvViewer(
                 self.graphic_config, human_controlled=render_mode == "human"
@@ -204,7 +204,6 @@ class RaceEnv(ParallelEnv):
         self, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[Dict[AgentId, ObsType], Dict[AgentId, Dict[Info, Any]]]:
         self.steps = 0
-
         reset_obs = self.race.reset()
         for kart in self.get_controlled_karts():
             kart.reset()
@@ -212,6 +211,7 @@ class RaceEnv(ParallelEnv):
             kart.id: obs for kart, obs in zip(self.get_controlled_karts(), reset_obs)
         }
         info = {kart.id: {} for kart in self.get_controlled_karts()}
+        self.agents = copy(self.possible_agents)
         return obs, info
 
     def close(self):
