@@ -161,7 +161,10 @@ class Race:
         return info
 
     def get_path_lines(self) -> List[Line3D]:
-        return [Line3D(*node) for node in self.track.path_nodes]
+        lines = [Line3D(*node) for node in self.track.path_nodes]
+        if self.config.reverse:
+            return lines[::-1]
+        return lines
 
     def get_path_width(self) -> npt.NDArray[np.float32]:
         return np.array(self.track.path_width)

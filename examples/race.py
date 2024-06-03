@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     reward_fn = get_reward_fn()
     race_config = RaceConfig.default_config()
-    # race_config.reverse = True
+    race_config.reverse = True
     env = RaceEnv(
         GraphicConfig(800, 600, GraphicQuality.HD),
         race_config,

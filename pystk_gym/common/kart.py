@@ -34,7 +34,6 @@ class Kart:
         self._node_idx = 0
 
     def _update_node_idx(self):
-        # TODO: sanity check this logic when self.is_reverse == True
         dist_down_track = (
             0
             if self.is_reverse and self.kart.overall_distance <= 0
@@ -67,7 +66,6 @@ class Kart:
         return self.kart.location
 
     def _get_kart_dist_from_center(self) -> float:
-        # compute the dist b/w the kart and the center of the track
         location = self.kart.location
         path_node = self.path_lines[self._node_idx]
         return float(path_node.distance(Point3D(location)).evalf())  # type: ignore
