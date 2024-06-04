@@ -63,8 +63,8 @@ class RaceConfig:
     @staticmethod
     def default_config() -> RaceConfig:
         return RaceConfig(
-            track="hacienda",
-            kart="tux",
+            track=None,
+            kart=None,
             num_karts=5,
             laps=1,
             reverse=False,
@@ -86,7 +86,6 @@ class RaceConfig:
         num_karts_controlled: int = 4,
     ) -> pystk.RaceConfig:
         track = np.random.choice(RaceConfig.TRACKS) if track is None else track
-        karts = np.random.choice(RaceConfig.KARTS) if karts is None else karts
         reverse = np.random.choice([True, False]) if reverse is None else reverse
         assert num_karts >= num_karts_controlled
 
@@ -118,9 +117,18 @@ class RaceConfig:
         config.difficulty = difficulty
         config.step_size = step_size
 
-        config.players[0].team = 0
-        config.players[0].kart = karts[0]
-        config.players[0].controller = pystk.PlayerConfig.Controller.PLAYER_CONTROL
+        if num_karts_controlled > 0:
+            first_player_config = pystk.PlayerConfig(
+                karts[0], pystk.PlayerConfig.Controller.PLAYER_CONTROL, 0
+            )
+        else:
+            first_player_config = pystk.PlayerConfig(
+                np.random.choice(RaceConfig.KARTS),
+                pystk.PlayerConfig.Controller.AI_CONTROL,
+                1,
+            )
+
+        config.players[0] = first_player_config
         for kart in karts[1:]:
             config.players.append(
                 pystk.PlayerConfig(
@@ -129,9 +137,13 @@ class RaceConfig:
             )
 
         # game controlled karts
-        for _ in range(num_karts - num_karts_controlled):
+        for _ in range(num_karts + num_karts_controlled - len(config.players)):
             config.players.append(
-                pystk.PlayerConfig("", pystk.PlayerConfig.Controller.AI_CONTROL, 1)
+                pystk.PlayerConfig(
+                    np.random.choice(RaceConfig.KARTS),
+                    pystk.PlayerConfig.Controller.AI_CONTROL,
+                    1,
+                )
             )
 
         return config
@@ -167,14 +179,14 @@ class Race:
         return lines
 
     def get_path_width(self) -> npt.NDArray[np.float32]:
+        if self.config.reverse:
+            return np.array(self.track.path_width[::-1])
         return np.array(self.track.path_width)
 
     def get_path_distance(self) -> npt.NDArray[np.float32]:
-        return np.array(
-            sorted(self.track.path_distance[::-1], key=lambda x: x[0])
-            if self.config.reverse
-            else self.track.path_distance
-        )
+        if self.config.reverse:
+            return np.array(self.track.path_distance[::-1])
+        return np.array(self.track.path_distance)
 
     @functools.lru_cache(maxsize=None)
     def get_controlled_kart_mask(self) -> List[bool]:
@@ -217,6 +229,11 @@ class Race:
         return np.array(
             list(map(lambda x: x.image, self.race.render_data)), dtype=np.uint8
         )[self.get_controlled_kart_mask()]
+
+    def observe_all(self) -> ObsType:
+        return np.array(
+            list(map(lambda x: x.image, self.race.render_data)), dtype=np.uint8
+        )
 
     def step(
         self, actions: Optional[Union[pystk.Action, Iterable[pystk.Action]]]
