@@ -188,15 +188,19 @@ class RaceEnv(ParallelEnv):
             for kart in self.get_controlled_karts()
             if not (terminals[kart.id] or truncated[kart.id])
         ]
+        self.render(self.render_mode)
         return obs, rewards, terminals, truncated, infos
 
     def render(
         self, mode: Literal["agent", "human", "rgb_array"] = "rgb_array"
     ) -> Optional[ObsType]:
-        obs = self.race.observe()
         if mode == "rgb_array":
-            return obs
-        if mode in ("human", "agent") and self.env_viewer is not None:
+            return self.race.observe()
+        if mode == "human":
+            obs = self.race.observe()
+            self.env_viewer.display(obs[0])
+        elif mode == "agent":
+            obs = self.race.observe_all()
             self.env_viewer.display(obs[0])
         return None
 
