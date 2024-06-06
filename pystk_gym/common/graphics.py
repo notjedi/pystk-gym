@@ -109,7 +109,7 @@ class PyGameWrapper:
         pygame.surfarray.blit_array(self.screen, render_data.swapaxes(0, 1))
         pygame.display.flip()
         self.clock.tick(self.display_hertz)
-        # print(f"id:= {self.id}, FPS:= {self.clock.get_fps()}")
+        # print(f"FPS:= {self.clock.get_fps()}")
         return self.current_action
 
     def close(self):

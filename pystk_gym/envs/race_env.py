@@ -1,4 +1,5 @@
 import functools
+import time
 from abc import abstractmethod
 from copy import copy
 from typing import (
@@ -40,6 +41,7 @@ class Comparable(Protocol):
 
 
 class RaceEnv(ParallelEnv):
+    TERMINAL_LIMIT = 100
     metadata = {
         "render.modes": ["agent", "human", "rgb_array"],
     }
@@ -80,6 +82,7 @@ class RaceEnv(ParallelEnv):
 
         self.possible_agents = [kart.id for kart in self.get_controlled_karts()]
         self.agents = copy(self.possible_agents)
+        self.start_time = time.time()
 
     def _make_karts(self, return_info: bool):
         is_reverse, path_width, path_lines, path_distance = (
@@ -131,9 +134,9 @@ class RaceEnv(ParallelEnv):
     def _terminal(self, infos: Dict[AgentId, dict]) -> Dict[AgentId, bool]:
         step_limit_reached = self.steps > self.max_step_cnt
         return {
-            agent_id: info[Info.OUT_OF_TRACK_COUNT] > 50
-            or info[Info.BACKWARD_COUNT] > 50
-            or info[Info.NO_MOVEMENT_COUNT] > 50
+            agent_id: info[Info.OUT_OF_TRACK_COUNT] > RaceEnv.TERMINAL_LIMIT
+            or info[Info.BACKWARD_COUNT] > RaceEnv.TERMINAL_LIMIT
+            or info[Info.NO_MOVEMENT_COUNT] > RaceEnv.TERMINAL_LIMIT
             or info[Info.DONE]
             or step_limit_reached
             for agent_id, info in infos.items()
@@ -169,6 +172,11 @@ class RaceEnv(ParallelEnv):
         Dict[AgentId, Dict[Info, Any]],  # info dictionary
     ]:
         self.steps += 1
+        delta_t = self.steps * self.race.config.step_size - (
+            time.time() - self.start_time
+        )
+        if delta_t > 0:
+            time.sleep(delta_t)
         # TODO: take multiple steps? if so, i have to render intermediate steps
         if self.render_mode == "human":
             actions = {

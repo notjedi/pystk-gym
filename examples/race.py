@@ -30,7 +30,7 @@ if __name__ == "__main__":
     track = random.choice(RaceConfig.TRACKS)
     print(f"Track: {track}")
     race_config = RaceConfig(
-        track=track, reverse=True, num_karts=1, num_karts_controlled=1
+        track=track, reverse=True, num_karts=1, num_karts_controlled=1, step_size=0.03
     )
     env = RaceEnv(
         GraphicConfig(960, 540, GraphicQuality.HD),

@@ -34,7 +34,7 @@ class RaceConfig:
         reverse: Optional[bool] = None,
         seed: int = 1337,
         difficulty: int = 1,
-        step_size: float = 0.045,
+        step_size: float = 0.09,
         num_karts_controlled: int = 3,
     ):
         self.track = track
@@ -82,7 +82,7 @@ class RaceConfig:
         reverse: Optional[bool] = None,
         seed: int = 1337,
         difficulty: int = 1,
-        step_size: float = 0.045,
+        step_size: float = 0.09,
         num_karts_controlled: int = 4,
     ) -> pystk.RaceConfig:
         track = np.random.choice(RaceConfig.TRACKS) if track is None else track

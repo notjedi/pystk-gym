@@ -120,13 +120,12 @@ class Kart:
         info[Info.ATTACHMENT] = self._get_attachment()
         info[Info.FINISH_TIME] = self._get_finish_time()
         info[Info.IS_INSIDE_TRACK] = self._get_is_inside_track()
-        info[Info.DISTANCE_DOWN_TRACK] = self._get_distance_down_track()
+        info[Info.OVERALL_DISTANCE] = self._get_distance_down_track()
 
         # info based on _prev_info
         if self._prev_info:
             delta_dist = (
-                info[Info.DISTANCE_DOWN_TRACK]
-                - self._prev_info[Info.DISTANCE_DOWN_TRACK]
+                info[Info.OVERALL_DISTANCE] - self._prev_info[Info.OVERALL_DISTANCE]
             )
             info[Info.DELTA_DIST] = delta_dist
             if delta_dist < 0:
