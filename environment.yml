@@ -23,20 +23,19 @@ dependencies:
   - xz=5.4.6=h5eee18b_1
   - zlib=1.2.13=h5eee18b_1
   - pip:
-      - certifi==2024.2.2
+      - certifi==2024.6.2
       - charset-normalizer==3.3.2
       - cloudpickle==3.0.0
       - contourpy==1.2.1
       - cycler==0.12.1
       - farama-notifications==0.0.4
-      - fonttools==4.51.0
+      - fonttools==4.53.0
       - gymnasium==0.29.1
       - idna==3.7
       - importlib-metadata==7.1.0
       - importlib-resources==6.4.0
       - kiwisolver==1.4.5
-      - matplotlib==3.8.4
-      - mpmath==1.3.0
+      - matplotlib==3.9.0
       - numpy==1.26.4
       - packaging==24.0
       - pettingzoo==1.24.3
@@ -46,12 +45,12 @@ dependencies:
       - pyqt5==5.15.10
       - pyqt5-qt5==5.15.2
       - pyqt5-sip==12.13.0
+      - pystk-gym==1.0.0
       - pysupertuxkart==1.1.2
       - pysupertuxkartdata==1.0.0
       - python-dateutil==2.9.0.post0
-      - requests==2.31.0
+      - requests==2.32.3
       - six==1.16.0
-      - sympy==1.12
-      - typing-extensions==4.11.0
+      - typing-extensions==4.12.1
       - urllib3==2.2.1
-      - zipp==3.18.1
+      - zipp==3.19.2

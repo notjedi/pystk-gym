@@ -23,7 +23,6 @@ setuptools.setup(
     python_requires=">=3.9",
     install_requires=[
         "numpy",
-        "sympy",
         "PyQt5",
         "pygame",
         "gymnasium",
