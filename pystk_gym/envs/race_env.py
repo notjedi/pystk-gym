@@ -69,6 +69,7 @@ class RaceEnv(ParallelEnv):
             3,
         )
         self._make_karts(return_info)
+        self.nitro_locs = self.race.get_nitro_locs()
 
         self.env_viewer: Optional[EnvViewer] = None
         if render_mode in ("human", "agent"):
@@ -108,13 +109,13 @@ class RaceEnv(ParallelEnv):
         }
 
     def _update_info_dict_with_race_info(self, infos: Dict[AgentId, Dict[Info, Any]]):
-        nitro_locs = self.race.get_nitro_locs()
         all_kart_rankings = self.race.get_all_kart_rankings()
         for info, kart in zip(infos.values(), self.get_controlled_karts()):
             info[Info.RANK] = all_kart_rankings[kart.id]
             kart_loc = np.array(info[Info.LOCATION])
             info[Info.NITRO] = any(
-                np.sqrt(np.sum(kart_loc - nitro_loc)) <= 1 for nitro_loc in nitro_locs
+                np.sqrt(np.sum(np.square(kart_loc - nitro_loc))) <= 2
+                for nitro_loc in self.nitro_locs
             )
 
     def _get_reward(
@@ -130,9 +131,9 @@ class RaceEnv(ParallelEnv):
     def _terminal(self, infos: Dict[AgentId, dict]) -> Dict[AgentId, bool]:
         step_limit_reached = self.steps > self.max_step_cnt
         return {
-            agent_id: info[Info.OUT_OF_TRACK_COUNT] > 25
+            agent_id: info[Info.OUT_OF_TRACK_COUNT] > 50
             or info[Info.BACKWARD_COUNT] > 50
-            or info[Info.NO_MOVEMENT_COUNT] > 25
+            or info[Info.NO_MOVEMENT_COUNT] > 50
             or info[Info.DONE]
             or step_limit_reached
             for agent_id, info in infos.items()
@@ -188,7 +189,6 @@ class RaceEnv(ParallelEnv):
             for kart in self.get_controlled_karts()
             if not (terminals[kart.id] or truncated[kart.id])
         ]
-        self.render(self.render_mode)
         return obs, rewards, terminals, truncated, infos
 
     def render(

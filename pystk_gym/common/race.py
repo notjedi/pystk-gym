@@ -6,9 +6,9 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 import numpy as np
 import numpy.typing as npt
 import pystk
-from sympy import Line3D
 
 ObsType = np.ndarray[np.ndarray, np.dtype[np.uint8]]
+LineType = np.ndarray[np.ndarray, np.dtype[np.float32]]
 
 
 class RaceConfig:
@@ -172,21 +172,20 @@ class Race:
         info["difficulty"] = self.config.difficulty
         return info
 
-    def get_path_lines(self) -> List[Line3D]:
-        lines = [Line3D(*node) for node in self.track.path_nodes]
+    def get_path_lines(self) -> List[LineType]:
         if self.config.reverse:
-            return lines[::-1]
-        return lines
+            return self.track.path_nodes[::-1]
+        return self.track.path_nodes
 
     def get_path_width(self) -> npt.NDArray[np.float32]:
         if self.config.reverse:
-            return np.array(self.track.path_width[::-1])
-        return np.array(self.track.path_width)
+            return self.track.path_width[::-1]
+        return self.track.path_width
 
     def get_path_distance(self) -> npt.NDArray[np.float32]:
         if self.config.reverse:
-            return np.array(self.track.path_distance[::-1])
-        return np.array(self.track.path_distance)
+            return self.track.path_distance[::-1]
+        return self.track.path_distance
 
     @functools.lru_cache(maxsize=None)
     def get_controlled_kart_mask(self) -> List[bool]:
@@ -209,9 +208,11 @@ class Race:
     def get_controlled_karts(self) -> List[pystk.Kart]:
         return list(np.array(self.get_all_karts())[self.get_controlled_kart_mask()])
 
-    def get_nitro_locs(self) -> List[List[int]]:
+    def get_nitro_locs(self) -> List[npt.NDArray[np.float32]]:
         return [
-            item.location for item in self.state.items if item in RaceConfig.NITRO_TYPE
+            np.array(item.location)
+            for item in self.state.items
+            if item.type in RaceConfig.NITRO_TYPE
         ]
 
     def get_all_kart_rankings(self) -> Dict[int, int]:

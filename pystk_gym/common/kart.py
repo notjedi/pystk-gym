@@ -3,9 +3,9 @@ from typing import Any, Dict, List
 import numpy as np
 import numpy.typing as npt
 import pystk
-from sympy import Line3D, Point3D
 
 from .info import Info
+from .race import LineType
 
 
 class Kart:
@@ -14,7 +14,7 @@ class Kart:
         kart: pystk.Kart,
         is_reverse: bool,
         path_width: npt.NDArray[np.float32],
-        path_lines: List[Line3D],
+        path_lines: List[LineType],
         path_distance: npt.NDArray[np.float32],
         return_info: bool = True,
     ):
@@ -33,19 +33,42 @@ class Kart:
         self.out_of_track_count = 0
         self._node_idx = 0
 
+    @staticmethod
+    def get_dist_bw_line_and_point(
+        line_points: np.ndarray[np.ndarray, np.dtype[np.float32]],
+        point: npt.NDArray[np.float32],
+    ) -> float:
+        # https://stackoverflow.com/questions/39840030/distance-between-point-and-a-line-from-two-points
+        dist = np.linalg.norm(
+            np.cross(line_points[1] - line_points[0], line_points[0] - point)
+        ) / np.linalg.norm(line_points[1] - line_points[0])
+        return dist.item()
+
     def _update_node_idx(self):
         dist_down_track = (
             0
             if self.is_reverse and self.kart.overall_distance <= 0
             else self.kart.distance_down_track
         )
-        path_dist = self.path_distance[self._node_idx]
-        while not path_dist[0] <= dist_down_track <= path_dist[1]:
-            if dist_down_track < path_dist[0]:
-                self._node_idx -= 1
-            elif dist_down_track > path_dist[1]:
-                self._node_idx += 1
-            path_dist = self.path_distance[self._node_idx]
+        min_path_dist_check = np.array(
+            [
+                path_dist[0] <= dist_down_track <= path_dist[1]
+                for path_dist in self.path_distance
+            ]
+        )
+        num_true_vals = np.sum(min_path_dist_check)
+        idxs = np.flatnonzero(min_path_dist_check)
+        if num_true_vals > 1:
+            kart_loc = self.kart.location
+            dist_from_centers = np.array(
+                [
+                    Kart.get_dist_bw_line_and_point(self.path_lines[idx], kart_loc)
+                    for idx in idxs
+                ]
+            )
+            self._node_idx = idxs[np.argmin(dist_from_centers).item()]
+        else:
+            self._node_idx = idxs.item()
 
     def _get_jumping(self) -> bool:
         return self.kart.jumping
@@ -62,13 +85,17 @@ class Kart:
     def _get_overall_distance(self) -> int:
         return max(0, self.kart.overall_distance)
 
+    def _get_distance_down_track(self) -> int:
+        return self.kart.distance_down_track
+
     def _get_location(self) -> List[int]:
         return self.kart.location
 
     def _get_kart_dist_from_center(self) -> float:
-        location = self.kart.location
+        kart_loc = np.array(self.kart.location, dtype=np.float32)
         path_node = self.path_lines[self._node_idx]
-        return float(path_node.distance(Point3D(location)).evalf())  # type: ignore
+        dist = Kart.get_dist_bw_line_and_point(path_node, kart_loc)
+        return dist
 
     def _get_is_inside_track(self) -> bool:
         curr_path_width = self.path_width[self._node_idx][0]
@@ -93,12 +120,13 @@ class Kart:
         info[Info.ATTACHMENT] = self._get_attachment()
         info[Info.FINISH_TIME] = self._get_finish_time()
         info[Info.IS_INSIDE_TRACK] = self._get_is_inside_track()
-        info[Info.OVERALL_DISTANCE] = self._get_overall_distance()
+        info[Info.DISTANCE_DOWN_TRACK] = self._get_distance_down_track()
 
         # info based on _prev_info
         if self._prev_info:
             delta_dist = (
-                info[Info.OVERALL_DISTANCE] - self._prev_info[Info.OVERALL_DISTANCE]
+                info[Info.DISTANCE_DOWN_TRACK]
+                - self._prev_info[Info.DISTANCE_DOWN_TRACK]
             )
             info[Info.DELTA_DIST] = delta_dist
             if delta_dist < 0:

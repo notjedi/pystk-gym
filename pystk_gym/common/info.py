@@ -10,7 +10,7 @@ class Info(Enum):
     ATTACHMENT = auto()
     FINISH_TIME = auto()
     IS_INSIDE_TRACK = auto()
-    OVERALL_DISTANCE = auto()
+    DISTANCE_DOWN_TRACK = auto()
     JUMP_COUNT = auto()
     BACKWARD_COUNT = auto()
     NO_MOVEMENT_COUNT = auto()
