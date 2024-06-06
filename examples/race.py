@@ -1,8 +1,8 @@
-import random
 import argparse
+import random
 
-from pettingzoo.utils.env import ActionType, AgentID, ObsType, ParallelEnv
 from pettingzoo.test import parallel_api_test
+from pettingzoo.utils.env import ActionType, AgentID, ObsType, ParallelEnv
 
 from pystk_gym import RaceEnv
 from pystk_gym.common.graphics import GraphicConfig, GraphicQuality
